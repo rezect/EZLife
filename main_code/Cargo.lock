@@ -3,17 +3,6 @@
 version = 3
 
 [[package]]
-name = "Simple-Rust-Tg-Bot"
-version = "0.1.0"
-dependencies = [
- "dotenvy",
- "log",
- "pretty_env_logger",
- "teloxide",
- "tokio",
-]
-
-[[package]]
 name = "addr2line"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1078,6 +1067,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8229b473baa5980ac72ef434c4415e70c4b5e71b423043adb4ba059f89c99a1"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "simple-rust-tg-bot"
+version = "0.1.0"
+dependencies = [
+ "dotenvy",
+ "log",
+ "pretty_env_logger",
+ "teloxide",
+ "tokio",
 ]
 
 [[package]]
