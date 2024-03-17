@@ -28,14 +28,13 @@ async fn receive_age(
 async fn receive_location(
     bot: Bot,
     dialogue: MyDialogue,
-    full_name: String,
-    age: u8,
+    (full_name, age): (String, u8),
     msg: Message,
 ) -> HandlerResult {
-    match msg.text() {
-        Some(location) => {
+    match msg.text().map(|text| text.parse::<String>()) {
+        Some(Ok(location)) => {
             let message = 
-                format!("Full name {}\nAge: {}\nLocation: {}", full_name, age, location);
+                format!("Full name {full_name}\nAge: {age}\nLocation: {location}");
             bot.send_message(msg.chat.id, message).await?;
             dialogue.exit().await?;
         }
