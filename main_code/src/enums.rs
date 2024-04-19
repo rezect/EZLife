@@ -24,6 +24,12 @@ pub enum State {
         energy: String,
         emotions: String,
     },
+    IsAllOk {
+        energy: String,
+        emotions: String,
+        reflection: String,
+    },
+    Waiting,
     OneHourOk,
     TwoHourOk,
 }

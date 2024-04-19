@@ -9,7 +9,7 @@ use teloxide::{
 };
 use comands_handlers::*;
 use handler_functions::*;
-use add_functions::{sleep_next_day, one_hour_ok, two_hour_ok};
+use add_functions::{add_str_to_file, sleep_next_day, one_hour_ok, two_hour_ok};
 use enums::*;
 
 type MyDialogue = Dialogue<State, InMemStorage<State>>;
@@ -42,13 +42,15 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
+        .branch(case![State::Start].endpoint(start))
+        .branch(case![State::Waiting].endpoint(waiting_handler))
         .branch(case![State::OneHourOk].endpoint(one_hour_ok))
         .branch(case![State::TwoHourOk].endpoint(two_hour_ok))
-        .branch(case![State::Start].endpoint(start))
         .branch(case![State::ReceiveAgree].endpoint(receive_agree))
         .branch(case![State::ReceiveEnergy].endpoint(receive_energy))
         .branch(case![State::ReceiveEmotions { energy }].endpoint(receive_emotions))
-        .branch(case![State::ReceiveReflection { energy, emotions }].endpoint(receive_reflection));
+        .branch(case![State::ReceiveReflection { energy, emotions }].endpoint(receive_reflection))
+        .branch(case![State::IsAllOk { energy, emotions, reflection }].endpoint(is_all_ok));
         
     dialogue::enter::<Update, InMemStorage<State>, State, _>()
         .branch(message_handler)
