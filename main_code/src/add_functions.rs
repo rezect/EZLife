@@ -15,10 +15,10 @@ pub async fn sleep_next_day() {
         seconds
     };
     let due: Duration;
-    if since_midnight > 81180 {
-        due = std::time::Duration::from_secs(86400 - since_midnight + 81180);
+    if since_midnight > 75600 {
+        due = std::time::Duration::from_secs(86400 - since_midnight + 75600);
     } else {
-        due = std::time::Duration::from_secs(81180 - since_midnight);
+        due = std::time::Duration::from_secs(75600 - since_midnight);
     }
     tokio::time::sleep(due).await;
 }

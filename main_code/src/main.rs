@@ -17,9 +17,10 @@ type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().expect("dotenv error");
     pretty_env_logger::init();
-    dotenvy::dotenv().expect("505");
     log::info!("Starting bot...");
+    
     let bot = Bot::from_env();
     let my_id = ChatId(821961326);
     bot.send_message(my_id, "I`ve been started...").await.unwrap();

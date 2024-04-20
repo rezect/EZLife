@@ -53,7 +53,7 @@ pub async fn receive_energy(bot: Bot, dialogue: MyDialogue, msg: Message) -> Han
             dialogue.update(State::ReceiveEmotions { energy: String::from("Высокая энергия") }).await?;
         }
         _ => {
-            bot.send_message(msg.chat.id, "Напиши одну из трех категорий: низкая, средняя, высокая").await?;
+            bot.send_message(msg.chat.id, "Напиши одну из трех категорий: 'Низкая', 'Средняя', 'Высокая'").await?;
             dialogue.update(State::ReceiveEnergy).await?;
         }
     }
