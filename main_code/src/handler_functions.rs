@@ -9,7 +9,7 @@ use chrono::Local;
 pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
     bot.send_message(msg.chat.id, "Привет, готов поговорить о прошедшем дне? ;)").await?;
     let chat_id = msg.chat.id.to_string();
-    let user_name = msg.from().unwrap().username.to_owned().unwrap();
+        let user_name = msg.from().unwrap().username.to_owned().unwrap_or("NoName".to_owned());
     let mut file = File::create(format!("user_data/{}", chat_id))?;
     writeln!(file, "Start documentation! Nickname - {}", user_name)?;
     dialogue.update(State::ReceiveAgree).await?;

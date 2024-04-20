@@ -69,6 +69,7 @@ pub async fn two_hour_ok(bot: Bot, dialogue: MyDialogue, msg: Message) -> Handle
             dialogue.update(State::ReceiveEnergy).await?;
         }
         Some("Нет") => {
+            bot.send_message(dialogue.chat_id(), "Хорошо, напишу завтра").await?;
             sleep_next_day().await;
             bot.send_message(dialogue.chat_id(), "Привет, готов поговорить о прошедшем дне? ;)").await?;
             dialogue.update(State::ReceiveAgree).await?;
