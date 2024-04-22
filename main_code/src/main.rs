@@ -4,12 +4,11 @@ mod comands_handlers;
 mod handler_functions;
 
 use teloxide::{
-    prelude::*,
-    dispatching::{dialogue::{self, InMemStorage}, UpdateHandler},
+    dispatching::{dialogue::{self, InMemStorage}, UpdateHandler}, prelude::*
 };
 use comands_handlers::*;
 use handler_functions::*;
-use add_functions::{add_str_to_file, sleep_next_day, one_hour_ok, two_hour_ok};
+use add_functions::*;
 use enums::*;
 
 type MyDialogue = Dialogue<State, InMemStorage<State>>;
@@ -39,14 +38,12 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
     let command_handler = teloxide::filter_command::<Command, _>()
         .branch(case![Command::Help].endpoint(help_handler))
         .branch(case![Command::Restart].endpoint(restart_handler))
-        .branch(case![Command::AddEmotions].endpoint(add_emotions_handler));
+        .branch(case![Command::AddEmotions].endpoint(add_emotions_handler))
+        .branch(case![Command::SendUserData].endpoint(send_user_data));
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
         .branch(case![State::Start].endpoint(start))
-        .branch(case![State::Waiting].endpoint(waiting_handler))
-        .branch(case![State::OneHourOk].endpoint(one_hour_ok))
-        .branch(case![State::TwoHourOk].endpoint(two_hour_ok))
         .branch(case![State::ReceiveAgree].endpoint(receive_agree))
         .branch(case![State::ReceiveEnergy].endpoint(receive_energy))
         .branch(case![State::ReceiveEmotions { energy }].endpoint(receive_emotions))

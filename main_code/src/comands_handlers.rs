@@ -1,6 +1,7 @@
 use teloxide::{
     prelude::*,
     utils::command::BotCommands,
+    types::InputFile,
 };
 use std::io::Write;
 use std::fs::File;
@@ -26,5 +27,16 @@ pub async fn add_emotions_handler(bot: Bot, msg: Message, dialogue: MyDialogue) 
     bot.send_message(msg.chat.id, "Пока дорабатывается;)").await?;
     // Реализация добавления эмоций в файлик
     dialogue.update(State::Start).await?;
+    Ok(())
+}
+
+pub async fn send_user_data(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
+    let chat_id = msg.chat.id.to_string();
+    let input_file = InputFile::file(format!("user_data/{}", chat_id));
+    let caption = "Ваши данные:";
+    bot.send_document(dialogue.chat_id(), input_file)
+        .caption(caption.to_string())
+        .send()
+        .await?;
     Ok(())
 }

@@ -1,5 +1,5 @@
 use teloxide::prelude::*;
-use crate::{State, MyDialogue, HandlerResult, sleep_next_day, add_str_to_file};
+use crate::{State, MyDialogue, HandlerResult, add_str_to_file};
 use std::fs::File;
 use std::io::Write;
 use chrono::Local;
@@ -7,9 +7,9 @@ use chrono::Local;
 
 // Функции-обработчики состояний
 pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
-    bot.send_message(msg.chat.id, "Привет, готов поговорить о прошедшем дне? ;)").await?;
+    bot.send_message(msg.chat.id, "Привет, готов поговорить о прошедшем дне(start)? ;)").await?;
     let chat_id = msg.chat.id.to_string();
-        let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
+    let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
     let mut file = File::create(format!("user_data/{}", chat_id))?;
     writeln!(file, "Start documentation! Nickname - {}", user_name)?;
     dialogue.update(State::ReceiveAgree).await?;
@@ -24,8 +24,8 @@ pub async fn receive_agree(bot: Bot, dialogue: MyDialogue, msg: Message) -> Hand
             dialogue.update(State::ReceiveEnergy).await?;
         }
         Some("Нет") => {
-            bot.send_message(msg.chat.id, "Хорошо, а через час удобно будет поговорить?").await?;
-            dialogue.update(State::OneHourOk).await?;
+            bot.send_message(msg.chat.id, "Тогда напиши Да когда удобно будет").await?;
+            dialogue.update(State::ReceiveAgree).await?;
         }
         _ => {
             bot.send_message(msg.chat.id, "Напиши только Да или Нет, зайка ;)").await?;
@@ -48,7 +48,7 @@ pub async fn receive_energy(bot: Bot, dialogue: MyDialogue, msg: Message) -> Han
             dialogue.update(State::ReceiveEmotions { energy: String::from("Средняя энергия") }).await?;
         }
         Some("Высокая") => {
-            bot.send_message(msg.chat.id, "Сегодня позитивненький день, получается что-ли :)").await?;
+            bot.send_message(msg.chat.id, "Сегодня позитивненький день, получается :)").await?;
             bot.send_message(msg.chat.id, "Теперь расскажи о своих чувствах за сегодня").await?;
             dialogue.update(State::ReceiveEmotions { energy: String::from("Высокая энергия") }).await?;
         }
@@ -90,8 +90,6 @@ pub async fn receive_reflection(
             bot.send_message(msg.chat.id, format!("Отлично, день закончен, поздравляю!\nВот краткий итог:")).await?;
             bot.send_message(msg.chat.id, format!("Energy: {}\nEmotions: {}\nReflection: {}", energy, emotions, text)).await?;
             bot.send_message(msg.chat.id, "Всё верно?").await?;
-            // let user_name = msg.from().unwrap().username.to_owned().unwrap();
-            // bot.send_message(ChatId(821961326), format!("User: {}\nEnergy: {}\nEmotions: {}\nReflection: {}", user_name, energy, emotions, text)).await?;
             dialogue.update(State::IsAllOk { energy, emotions, reflection: (text.into()) }).await?;
         }
         _ => {
@@ -111,7 +109,6 @@ pub async fn is_all_ok(
     use std::fs::OpenOptions;
     match msg.text() {
         Some("Да") => {
-            let dialogue_clone = dialogue.clone();
             let date_time_string = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
             add_str_to_file(String::from(format!("user_data/{}", msg.chat.id.to_string())), date_time_string, String::from("Date"))?;
             add_str_to_file(String::from(format!("user_data/{}", msg.chat.id.to_string())), energy, String::from("Energy"))?;
@@ -124,26 +121,17 @@ pub async fn is_all_ok(
                 .open(format!("user_data/{}", msg.chat.id.to_string()))?;
             writeln!(file, "")?;
             bot.send_message(msg.chat.id, "Хорошо, записал!\nДо встречи завтра ;)").await?;
-            tokio::spawn( async move {
-                sleep_next_day().await;
-                bot.send_message(msg.chat.id, "Привет, готов поговорить о прошедшем дне? ;)").await.unwrap();
-                dialogue.update(State::ReceiveAgree).await.unwrap();
-            });
-            dialogue_clone.update(State::Waiting).await?;
+            dialogue.update(State::Waiting).await?;
         }
         Some("Нет") => {
             // В разработке
             bot.send_message(msg.chat.id, "Эта функция дорабатывается...").await?;
+            dialogue.update(State::IsAllOk { energy, emotions, reflection }).await?;
         }
         _ => {
             bot.send_message(msg.chat.id, "Я не понял твой ответ. Отправь либо Да либо Нет.").await?;
             dialogue.update(State::IsAllOk { energy, emotions, reflection }).await?;
         }
     }
-    Ok(())
-}
-
-pub async fn waiting_handler() -> HandlerResult {
-    print!("Waiting handler...\n");
     Ok(())
 }

@@ -9,6 +9,8 @@ pub enum Command {
     Restart,
     #[command(description = "Add your emotions")]
     AddEmotions,
+    #[command(description = "Sends your data")]
+    SendUserData,
 }
 
 #[derive(Clone, Default)]
@@ -30,6 +32,4 @@ pub enum State {
         reflection: String,
     },
     Waiting,
-    OneHourOk,
-    TwoHourOk,
 }
