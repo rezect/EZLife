@@ -37,4 +37,5 @@ pub enum State {
     },
     Waiting,
     DeleteAllUserData,
+    OneHourOk,
 }

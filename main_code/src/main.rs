@@ -51,7 +51,9 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![State::ReceiveEmotions { energy }].endpoint(receive_emotions))
         .branch(case![State::ReceiveReflection { energy, emotions }].endpoint(receive_reflection))
         .branch(case![State::IsAllOk { energy, emotions, reflection }].endpoint(is_all_ok))
-        .branch(case![State::DeleteAllUserData].endpoint(delete_handler));
+        .branch(case![State::DeleteAllUserData].endpoint(delete_handler))
+        .branch(case![State::OneHourOk].endpoint(one_hour_ok_handler))
+        .branch(case![State::Waiting].endpoint(waiting_handler));
         
     dialogue::enter::<Update, InMemStorage<State>, State, _>()
         .branch(message_handler)

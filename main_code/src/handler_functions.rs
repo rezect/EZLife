@@ -1,17 +1,41 @@
-use teloxide::prelude::*;
-use crate::{State, MyDialogue, HandlerResult, add_str_to_file};
+use crate::*;
 use std::fs::File;
 use std::io::Write;
 use chrono::Local;
+use tokio_cron_scheduler::{Job, JobScheduler};
+use std::path::Path;
 
 
 // Функции-обработчики состояний
 pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+    let sched = JobScheduler::new().await?;
+    let bot_clone = bot.clone();
+    let msg_clone = msg.clone();
+    let dialogue_clone = dialogue.clone();
+    sched.add(
+        Job::new_async("00 34 15 * * ? *", move |_uuid, _lock| {
+            let bot_clone = bot_clone.clone();
+            let msg_clone = msg_clone.clone();
+            let dialogue_clone = dialogue_clone.clone();
+            Box::pin( async move {
+                bot_clone.send_message(msg_clone.chat.id, "Ку, готов поговорить про твой день?").await.unwrap();
+                dialogue_clone.update(State::ReceiveAgree).await.unwrap();
+            })
+        })?
+    ).await?;
+    sched.start().await?;
+
     bot.send_message(msg.chat.id, "Добро пожаловать, путник! Уже готов поговорить про твой день?").await?;
     let chat_id = msg.chat.id.to_string();
     let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
-    let mut file = File::create(format!("user_data/{}", chat_id))?;
-    writeln!(file, "Start documentation! Nickname - {}", user_name)?;
+
+    let path_str = format!("user_data/{}", chat_id);
+    let path = Path::new(&path_str);
+    if !path.exists() {
+        let mut file = File::create(&path)?;
+        writeln!(file, "Start documentation! Nickname - {}", user_name)?;
+    }
+
     dialogue.update(State::ReceiveAgree).await?;
     Ok(())
 }
@@ -25,7 +49,8 @@ pub async fn receive_agree(bot: Bot, dialogue: MyDialogue, msg: Message) -> Hand
         }
         Some("Нет") => {
             bot.send_message(msg.chat.id, "Тогда напиши Да когда удобно будет").await?;
-            dialogue.update(State::ReceiveAgree).await?;
+            bot.send_message(msg.chat.id, "Через час?").await?;
+            dialogue.update(State::OneHourOk).await?;
         }
         _ => {
             bot.send_message(msg.chat.id, "Напиши только Да или Нет, зайка ;)").await?;
@@ -107,6 +132,7 @@ pub async fn is_all_ok(
     msg: Message
 ) -> HandlerResult {
     use std::fs::OpenOptions;
+
     match msg.text() {
         Some("Да") => {
             let date_time_string = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -125,7 +151,7 @@ pub async fn is_all_ok(
         }
         Some("Нет") => {
             // В разработке
-            bot.send_message(msg.chat.id, "Эта функция дорабатывается...").await?;
+            bot.send_message(msg.chat.id, "Эта функция дорабатывается... Пока можете использовать /restart").await?;
             dialogue.update(State::IsAllOk { energy, emotions, reflection }).await?;
         }
         _ => {
@@ -161,8 +187,39 @@ pub async fn delete_handler(
             dialogue.update(State::Waiting).await?;
         }
         _ => {
-
+            bot.send_message(msg.chat.id, "Я не понял твой ответ. Отправь либо Да либо Нет.").await?;
+            dialogue.update(State::DeleteAllUserData).await?;
         }
     }
+    Ok(())
+}
+
+pub async fn one_hour_ok_handler(
+    bot: Bot,
+    dialogue: MyDialogue,
+    msg: Message,
+
+) -> HandlerResult {
+    use tokio::time::sleep;
+    use std::time::Duration;
+
+    match msg.text() {
+        Some("Да") => {
+            sleep(Duration::from_secs(10)).await;
+            bot.send_message(msg.chat.id, "Время прошло, солнышко").await.unwrap();
+        }
+        _ => {
+            bot.send_message(msg.chat.id, "Я не понял твой ответ. Отправь либо Да либо Нет.").await?;
+            dialogue.update(State::OneHourOk).await?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn waiting_handler(
+    bot: Bot,
+    dialogue: MyDialogue,
+) -> HandlerResult {
+    bot.send_message(dialogue.chat_id(), "Для просмотра доступных команд введите /help").await?;
     Ok(())
 }

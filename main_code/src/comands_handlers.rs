@@ -3,6 +3,9 @@ use teloxide::{
     utils::command::BotCommands,
     types::InputFile,
 };
+use std::path::Path;
+use std::io::Write;
+use std::fs::File;
 
 use crate::{Command, State, MyDialogue, HandlerResult};
 
@@ -12,22 +15,32 @@ pub async fn help_handler(bot: Bot, msg: Message) -> HandlerResult {
 }
 
 pub async fn restart_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
+    let chat_id = msg.chat.id.to_string();
+    let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
+    let path_str = format!("user_data/{}", chat_id);
+    let path = Path::new(&path_str);
+    if !path.exists() {
+        let mut file = File::create(&path)?;
+        writeln!(file, "Start documentation! Nickname - {}", user_name)?;
+    }
     bot.send_message(msg.chat.id, "Привет, готов поговорить о прошедшем дне? ;)").await?;
     dialogue.update(State::ReceiveAgree).await?;
     Ok(())
 }
 
-pub async fn add_emotions_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
+pub async fn add_emotions_handler(bot: Bot, msg: Message) -> HandlerResult {
     bot.send_message(msg.chat.id, "Пока дорабатывается;)").await?;
     // Реализация добавления эмоций в файлик
-    dialogue.update(State::Start).await?;
     Ok(())
 }
 
 pub async fn send_user_data(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
+    use std::fs;
     let chat_id = msg.chat.id.to_string();
+    let contents = fs::read_to_string(format!("user_data/{}", chat_id))?;
+    bot.send_message(dialogue.chat_id(), contents).await?;
     let input_file = InputFile::file(format!("user_data/{}", chat_id));
-    let caption = "Ваши данные:";
+    let caption = "Ваши данные, мюсьё:";
     bot.send_document(dialogue.chat_id(), input_file)
         .caption(caption.to_string())
         .send()
