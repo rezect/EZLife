@@ -13,7 +13,7 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
     let msg_clone = msg.clone();
     let dialogue_clone = dialogue.clone();
     sched.add(
-        Job::new_async("00 34 15 * * ? *", move |_uuid, _lock| {
+        Job::new_async("00 00 18 * * ? *", move |_uuid, _lock| {
             let bot_clone = bot_clone.clone();
             let msg_clone = msg_clone.clone();
             let dialogue_clone = dialogue_clone.clone();
