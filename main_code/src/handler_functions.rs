@@ -9,7 +9,7 @@ use chrono::Local;
 pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
     bot.send_message(msg.chat.id, "Привет, готов поговорить о прошедшем дне? ;)").await?;
     let chat_id = msg.chat.id.to_string();
-        let user_name = msg.from().unwrap().username.to_owned().unwrap_or("NoName".to_owned());
+        let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
     let mut file = File::create(format!("user_data/{}", chat_id))?;
     writeln!(file, "Start documentation! Nickname - {}", user_name)?;
     dialogue.update(State::ReceiveAgree).await?;
@@ -123,7 +123,7 @@ pub async fn is_all_ok(
                 .create(true)
                 .open(format!("user_data/{}", msg.chat.id.to_string()))?;
             writeln!(file, "")?;
-            bot.send_message(msg.chat.id, "Хорошо, записал!\nДо встречи завтра, хрючало ;)").await?;
+            bot.send_message(msg.chat.id, "Хорошо, записал!\nДо встречи завтра ;)").await?;
             tokio::spawn( async move {
                 sleep_next_day().await;
                 bot.send_message(msg.chat.id, "Привет, готов поговорить о прошедшем дне? ;)").await.unwrap();

@@ -15,7 +15,7 @@ pub async fn help_handler(bot: Bot, msg: Message) -> HandlerResult {
 pub async fn restart_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
     bot.send_message(msg.chat.id, "Привет, готов поговорить о прошедшем дне? ;)").await?;
     let chat_id = msg.chat.id.to_string();
-    let user_name = msg.from().unwrap().username.to_owned().unwrap_or("NoName".to_owned());
+    let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
     let mut file = File::create(format!("user_data/{}", chat_id))?;
     writeln!(file, "Start documentation! Nickname - {}", user_name)?;
     dialogue.update(State::ReceiveAgree).await?;
@@ -23,8 +23,8 @@ pub async fn restart_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> Ha
 }
 
 pub async fn add_emotions_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
-    bot.send_message(msg.chat.id, "Какие эмоции ты хочешь добавить?").await?;
+    bot.send_message(msg.chat.id, "Пока дорабатывается;)").await?;
     // Реализация добавления эмоций в файлик
-    dialogue.update(State::ReceiveAgree).await?;
+    dialogue.update(State::Start).await?;
     Ok(())
 }
