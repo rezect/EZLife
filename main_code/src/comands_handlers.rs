@@ -3,8 +3,6 @@ use teloxide::{
     utils::command::BotCommands,
     types::InputFile,
 };
-use std::io::Write;
-use std::fs::File;
 
 use crate::{Command, State, MyDialogue, HandlerResult};
 
@@ -15,10 +13,6 @@ pub async fn help_handler(bot: Bot, msg: Message) -> HandlerResult {
 
 pub async fn restart_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
     bot.send_message(msg.chat.id, "Привет, готов поговорить о прошедшем дне? ;)").await?;
-    let chat_id = msg.chat.id.to_string();
-    let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
-    let mut file = File::create(format!("user_data/{}", chat_id))?;
-    writeln!(file, "Start documentation! Nickname - {}", user_name)?;
     dialogue.update(State::ReceiveAgree).await?;
     Ok(())
 }
@@ -38,5 +32,11 @@ pub async fn send_user_data(bot: Bot, msg: Message, dialogue: MyDialogue) -> Han
         .caption(caption.to_string())
         .send()
         .await?;
+    Ok(())
+}
+
+pub async fn delete_all_data(bot: Bot, dialogue: MyDialogue) -> HandlerResult {
+    bot.send_message(dialogue.chat_id(), "Вы уверены что хотите удалить свои заметки?\nВернуть будет пока еще нельзя, но скоро добавлю.").await?;
+    dialogue.update(State::DeleteAllUserData).await?;
     Ok(())
 }

@@ -7,10 +7,14 @@ pub enum Command {
     Help,
     #[command(description = "Restart the dialogue")]
     Restart,
+    #[command(description = "Start new session")]
+    New,
     #[command(description = "Add your emotions")]
     AddEmotions,
-    #[command(description = "Sends your data")]
+    #[command(description = "Get your data")]
     SendUserData,
+    #[command(description = "Delete all your data")]
+    DeleteAllData,
 }
 
 #[derive(Clone, Default)]
@@ -32,4 +36,5 @@ pub enum State {
         reflection: String,
     },
     Waiting,
+    DeleteAllUserData,
 }

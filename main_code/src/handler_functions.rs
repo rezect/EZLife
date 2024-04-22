@@ -7,7 +7,7 @@ use chrono::Local;
 
 // Функции-обработчики состояний
 pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
-    bot.send_message(msg.chat.id, "Привет, готов поговорить о прошедшем дне(start)? ;)").await?;
+    bot.send_message(msg.chat.id, "Добро пожаловать, путник! Уже готов поговорить про твой день?").await?;
     let chat_id = msg.chat.id.to_string();
     let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
     let mut file = File::create(format!("user_data/{}", chat_id))?;
@@ -131,6 +131,37 @@ pub async fn is_all_ok(
         _ => {
             bot.send_message(msg.chat.id, "Я не понял твой ответ. Отправь либо Да либо Нет.").await?;
             dialogue.update(State::IsAllOk { energy, emotions, reflection }).await?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn delete_handler(
+    bot: Bot,
+    dialogue: MyDialogue,
+    msg: Message
+) -> HandlerResult {
+    use tokio::time::sleep;
+    use std::time::Duration;
+    match msg.text() {
+        Some("Да") => {
+            let chat_id = msg.chat.id.to_string();
+            let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
+            let mut file = File::create(format!("user_data/{}", chat_id))?;
+            writeln!(file, "Start documentation! Nickname - {}", user_name)?;
+            bot.send_message(dialogue.chat_id(), "Ваши данные успешно удалены!").await?;
+            dialogue.update(State::Waiting).await?;
+        }
+        Some("Нет") => {
+            bot.send_message(dialogue.chat_id(), "Ваши данные успешно удалены!").await?;
+            sleep(Duration::from_secs(2)).await;
+            bot.send_message(dialogue.chat_id(), "Ладно, шучу").await?;
+            sleep(Duration::from_millis(200)).await;
+            bot.send_message(dialogue.chat_id(), "Ваши данные в сохранности").await?;
+            dialogue.update(State::Waiting).await?;
+        }
+        _ => {
+
         }
     }
     Ok(())
