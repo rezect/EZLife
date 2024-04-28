@@ -22,7 +22,15 @@ async fn main() {
     
     let bot = Bot::from_env();
     let my_id = ChatId(821961326);
-    bot.send_message(my_id, "I`ve been started...").await.unwrap();
+    match bot.send_message(my_id, "I`ve been started...").await {
+        Ok(_) => {
+            log::trace!("Succsess to send message 'I`ve been started...'");
+        }
+        Err(err) => {
+            log::trace!("Error to send message 'I`ve been started...': {}", err);
+        }
+        _ => {}
+    }
 
     Dispatcher::builder(bot, shema())
     .dependencies(dptree::deps![InMemStorage::<State>::new()])

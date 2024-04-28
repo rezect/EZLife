@@ -18,8 +18,24 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
             let msg_clone = msg_clone.clone();
             let dialogue_clone = dialogue_clone.clone();
             Box::pin( async move {
-                bot_clone.send_message(msg_clone.chat.id, "Ку, готов поговорить про твой день?").await.unwrap();
-                dialogue_clone.update(State::ReceiveAgree).await.unwrap();
+                match bot_clone.send_message(msg_clone.chat.id, "Ку, готов поговорить про твой день?").await {
+                    Ok(_) => {
+                        log::trace!("Success to send message 'Ку, готов поговорить про твой день?'", );
+                    }
+                    Err(err) => {
+                        log::warn!("Failed to send message: {}", err);
+                    }
+                    _ => {}
+                }
+                match dialogue_clone.update(State::ReceiveAgree).await {
+                    Ok(_) => {
+                        log::trace!("Success update to ReceiveAgree");
+                    }
+                    Err(err) => {
+                        log::warn!("Failed to update dialogue state: {}", err);
+                    }
+                    _ => {}
+                }
             })
         })?
     ).await?;
@@ -200,16 +216,9 @@ pub async fn one_hour_ok_handler(
     msg: Message,
 
 ) -> HandlerResult {
-    use tokio::time::sleep;
-    use std::time::Duration;
-
     match msg.text() {
-        Some("Да") => {
-            sleep(Duration::from_secs(10)).await;
-            bot.send_message(msg.chat.id, "Время прошло, солнышко").await.unwrap();
-        }
         _ => {
-            bot.send_message(msg.chat.id, "Я не понял твой ответ. Отправь либо Да либо Нет.").await?;
+            bot.send_message(msg.chat.id, "Эта функция еще не реализована :/").await?;
             dialogue.update(State::OneHourOk).await?;
         }
     }
