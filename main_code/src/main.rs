@@ -24,10 +24,10 @@ async fn main() {
     let my_id = ChatId(821961326);
     match bot.send_message(my_id, "I`ve been started...").await {
         Ok(_) => {
-            log::trace!("Succsess to send message 'I`ve been started...'");
+            log::info!("Succsess to send message 'I`ve been started...'");
         }
         Err(err) => {
-            log::trace!("Error to send message 'I`ve been started...': {}", err);
+            log::error!("Error to send message 'I`ve been started...': {}", err);
         }
     }
 

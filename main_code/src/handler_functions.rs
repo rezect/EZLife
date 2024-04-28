@@ -20,7 +20,7 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
             Box::pin( async move {
                 match bot_clone.send_message(msg_clone.chat.id, "Ку, готов поговорить про твой день?").await {
                     Ok(_) => {
-                        log::trace!("Success to send message 'Ку, готов поговорить про твой день?'", );
+                        log::info!("Success to send message 'Ку, готов поговорить про твой день?'", );
                     }
                     Err(err) => {
                         log::warn!("Failed to send message: {}", err);
@@ -28,7 +28,7 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
                 }
                 match dialogue_clone.update(State::ReceiveAgree).await {
                     Ok(_) => {
-                        log::trace!("Success update to ReceiveAgree");
+                        log::info!("Success update to ReceiveAgree");
                     }
                     Err(err) => {
                         log::warn!("Failed to update dialogue state: {}", err);
