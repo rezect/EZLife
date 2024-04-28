@@ -29,7 +29,6 @@ async fn main() {
         Err(err) => {
             log::trace!("Error to send message 'I`ve been started...': {}", err);
         }
-        _ => {}
     }
 
     Dispatcher::builder(bot, shema())

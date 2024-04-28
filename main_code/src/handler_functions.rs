@@ -25,7 +25,6 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
                     Err(err) => {
                         log::warn!("Failed to send message: {}", err);
                     }
-                    _ => {}
                 }
                 match dialogue_clone.update(State::ReceiveAgree).await {
                     Ok(_) => {
@@ -34,7 +33,6 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
                     Err(err) => {
                         log::warn!("Failed to update dialogue state: {}", err);
                     }
-                    _ => {}
                 }
             })
         })?
