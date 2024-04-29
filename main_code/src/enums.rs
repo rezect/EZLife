@@ -15,6 +15,8 @@ pub enum Command {
     SendUserData,
     #[command(description = "Delete all your data")]
     DeleteAllData,
+    #[command(description = "Bot go to sleep")]
+    Sleep,
 }
 
 #[derive(Clone, Default)]

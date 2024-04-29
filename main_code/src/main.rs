@@ -48,7 +48,8 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![Command::Restart].endpoint(restart_handler))
         .branch(case![Command::AddEmotions].endpoint(add_emotions_handler))
         .branch(case![Command::SendUserData].endpoint(send_user_data))
-        .branch(case![Command::DeleteAllData].endpoint(delete_all_data));
+        .branch(case![Command::DeleteAllData].endpoint(delete_all_data))
+        .branch(case![Command::Sleep].endpoint(sleep_handler));
 
     let message_handler = Update::filter_message()
         .branch(command_handler)

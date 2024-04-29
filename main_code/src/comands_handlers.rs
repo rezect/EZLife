@@ -53,3 +53,9 @@ pub async fn delete_all_data(bot: Bot, dialogue: MyDialogue) -> HandlerResult {
     dialogue.update(State::DeleteAllUserData).await?;
     Ok(())
 }
+
+pub async fn sleep_handler(bot: Bot, dialogue: MyDialogue) -> HandlerResult {
+    bot.send_message(dialogue.chat_id(), "Перехожу в спящий режим.").await?;
+    dialogue.update(State::Waiting).await?;
+    Ok(())
+}
