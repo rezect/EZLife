@@ -39,10 +39,7 @@ pub async fn add_reflection_handler(bot: Bot, dialogue: MyDialogue, msg: Message
 }
 
 pub async fn send_user_data(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
-    use std::fs;
     let chat_id = msg.chat.id.to_string();
-    let contents = fs::read_to_string(format!("user_data/{}", chat_id))?;
-    bot.send_message(dialogue.chat_id(), contents).await?;
     let input_file = InputFile::file(format!("user_data/{}", chat_id));
     let caption = "Ваши данные, мюсьё:";
     bot.send_document(dialogue.chat_id(), input_file)
