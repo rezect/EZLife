@@ -44,17 +44,29 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
 
     bot.send_message(msg.chat.id, "Добро пожаловать, путник! Я бот, который будет выслушивать все твои жалобы и радости ;)").await?;
     tokio::time::sleep(Duration::from_secs(2)).await;
-    bot.send_message(msg.chat.id, "Давай начнем с настройки Notion для более удобного хранения твоих записей?").await?;
-    let chat_id = msg.chat.id.to_string();
-    let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
-    let path_str = format!("user_data/{}", chat_id);
-    let path = Path::new(&path_str);
-    if !path.exists() {
-        let mut file = File::create(&path)?;
-        writeln!(file, "Start documentation! Nickname - {}", user_name)?;
+    if msg.chat.id == ChatId(821961326) {
+        bot.send_message(msg.chat.id, "Давай начнем с настройки Notion для более удобного хранения твоих записей?").await?;
+        let chat_id = msg.chat.id.to_string();
+        let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
+        let path_str = format!("user_data/{}", chat_id);
+        let path = Path::new(&path_str);
+        if !path.exists() {
+            let mut file = File::create(&path)?;
+            writeln!(file, "Start documentation! Nickname - {}", user_name)?;
+        }
+        dialogue.update(State::ReceiveToNotion).await?;
+    } else {
+        bot.send_message(msg.chat.id, "Как прошел твой день? Можешь поделиться со мной впечатлениями!").await?;
+        let chat_id = msg.chat.id.to_string();
+        let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
+        let path_str = format!("user_data/{}", chat_id);
+        let path = Path::new(&path_str);
+        if !path.exists() {
+            let mut file = File::create(&path)?;
+            writeln!(file, "Start documentation! Nickname - {}", user_name)?;
+        }
+        dialogue.update(State::ReceiveAgree).await?;
     }
-
-    dialogue.update(State::ReceiveToNotion).await?;
     Ok(())
 }
 
