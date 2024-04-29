@@ -1200,21 +1200,6 @@ dependencies = [
  "dotenvy",
  "log",
  "pretty_env_logger",
- "simple-rust-tg-bot 0.1.0 (git+https://github.com/rezect/Simple-Rust-Tg-Bot?branch=dispatching)",
- "teloxide",
- "tokio",
- "tokio-cron-scheduler",
-]
-
-[[package]]
-name = "simple-rust-tg-bot"
-version = "0.1.0"
-source = "git+https://github.com/rezect/Simple-Rust-Tg-Bot?branch=dispatching#3d2a27af73db73e4912d2ea0a4a412c71c6f131b"
-dependencies = [
- "chrono",
- "dotenvy",
- "log",
- "pretty_env_logger",
  "teloxide",
  "tokio",
  "tokio-cron-scheduler",
