@@ -9,20 +9,24 @@ pub enum Command {
     Restart,
     #[command(description = "Start new session")]
     New,
-    #[command(description = "Add your emotions")]
-    AddEmotions,
+    #[command(description = "Add your reflection")]
+    AddReflection,
     #[command(description = "Get your data")]
     SendUserData,
     #[command(description = "Delete all your data")]
     DeleteAllData,
     #[command(description = "Bot go to sleep")]
     Sleep,
+    #[command(description = "Change your DB id")]
+    ChangeDBId,
 }
 
 #[derive(Clone, Default)]
 pub enum State {
     #[default]
     Start,
+    ReceiveToNotion,
+    ReceiveNotionInfo,
     ReceiveAgree,
     ReceiveEnergy,
     ReceiveEmotions {
@@ -40,4 +44,5 @@ pub enum State {
     Waiting,
     DeleteAllUserData,
     OneHourOk,
+    AddNewReflection,
 }

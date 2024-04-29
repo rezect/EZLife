@@ -1,7 +1,5 @@
 use teloxide::{
-    prelude::*,
-    utils::command::BotCommands,
-    types::InputFile,
+    prelude::*, types::InputFile, utils::command::BotCommands
 };
 use std::path::Path;
 use std::io::Write;
@@ -28,9 +26,9 @@ pub async fn restart_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> Ha
     Ok(())
 }
 
-pub async fn add_emotions_handler(bot: Bot, msg: Message) -> HandlerResult {
-    bot.send_message(msg.chat.id, "Пока дорабатывается;)").await?;
-    // Реализация добавления эмоций в файлик
+pub async fn add_reflection_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+    bot.send_message(msg.chat.id, "Я всегда готов тебя выслушать. Давай, рассказывай!").await?;
+    dialogue.update(State::AddNewReflection).await?;
     Ok(())
 }
 
@@ -49,7 +47,7 @@ pub async fn send_user_data(bot: Bot, msg: Message, dialogue: MyDialogue) -> Han
 }
 
 pub async fn delete_all_data(bot: Bot, dialogue: MyDialogue) -> HandlerResult {
-    bot.send_message(dialogue.chat_id(), "Вы уверены что хотите удалить свои заметки?\nВернуть будет пока еще нельзя, но скоро добавлю.").await?;
+    bot.send_message(dialogue.chat_id(), "Вы уверены что хотите удалить свои заметки локально?\nВернуть будет пока еще нельзя, но скоро добавлю.").await?;
     dialogue.update(State::DeleteAllUserData).await?;
     Ok(())
 }
@@ -57,5 +55,11 @@ pub async fn delete_all_data(bot: Bot, dialogue: MyDialogue) -> HandlerResult {
 pub async fn sleep_handler(bot: Bot, dialogue: MyDialogue) -> HandlerResult {
     bot.send_message(dialogue.chat_id(), "Перехожу в спящий режим.").await?;
     dialogue.update(State::Waiting).await?;
+    Ok(())
+}
+
+pub async fn change_db_id(msg: Message, bot: Bot, dialogue: MyDialogue) -> HandlerResult {
+    bot.send_message(msg.chat.id, "Введите новую ссылку на базу данных").await?;
+    dialogue.update(State::ReceiveNotionInfo).await?;
     Ok(())
 }

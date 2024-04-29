@@ -2,13 +2,15 @@ use crate::*;
 use std::fs::File;
 use std::io::Write;
 use chrono::Local;
-use tokio_cron_scheduler::{Job, JobScheduler};
+// use tokio_cron_scheduler::{Job, JobScheduler};
 use std::path::Path;
 
 
 // Функции-обработчики состояний
 pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
-    let sched = JobScheduler::new().await?;
+
+    // Удаленное напоминание каждый день в 9 вечера по МСК
+    /*let sched = JobScheduler::new().await?;
     let bot_clone = bot.clone();
     let msg_clone = msg.clone();
     let dialogue_clone = dialogue.clone();
@@ -37,12 +39,14 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
             })
         })?
     ).await?;
-    sched.start().await?;
+    sched.start().await?;*/
+    use std::time::Duration;
 
-    bot.send_message(msg.chat.id, "Добро пожаловать, путник! Уже готов поговорить про твой день?").await?;
+    bot.send_message(msg.chat.id, "Добро пожаловать, путник! Я бот, который будет выслушивать все твои жалобы и радости ;)").await?;
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    bot.send_message(msg.chat.id, "Давай начнем с настройки Notion для более удобного хранения твоих записей?").await?;
     let chat_id = msg.chat.id.to_string();
     let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
-
     let path_str = format!("user_data/{}", chat_id);
     let path = Path::new(&path_str);
     if !path.exists() {
@@ -50,7 +54,47 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
         writeln!(file, "Start documentation! Nickname - {}", user_name)?;
     }
 
-    dialogue.update(State::ReceiveAgree).await?;
+    dialogue.update(State::ReceiveToNotion).await?;
+    Ok(())
+}
+
+pub async fn receive_to_notion(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+    match msg.text() {
+        Some("Да") => {
+            bot.send_message(msg.chat.id, "Отлично, давай начнем!").await?;
+            bot.send_message(msg.chat.id, "Мне от тебя нужна ссылка на страницу, где ты будешь хранить свои данные:").await?;
+            dialogue.update(State::ReceiveNotionInfo).await?;
+        }
+        Some("Нет") => {
+            bot.send_message(msg.chat.id, "Тогда можешь позже попробовать, котик ;)").await?;
+            bot.send_message(msg.chat.id, "Поговорим про твой день?").await?;
+            dialogue.update(State::ReceiveAgree).await?;
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+pub async fn receive_notion_info(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+    // https://www.notion.so/1ebb0c60b8864f668cc588eb9c816e91?v=8bc528af15334bda9803696341155178
+    match msg.text() {
+        Some(url) => {
+            let chat_id: String = msg.chat.id.to_string();
+            let db_token = &url[22..(22 + 32)];
+            let path_str = format!("user_conf/{}", chat_id);
+            let path = Path::new(&path_str);
+            let mut file = File::create(&path)?;
+            writeln!(file, "{}", db_token)?;
+            log::info!("Success to save notion token to file");
+            bot.send_message(msg.chat.id, "Спасибо, теперь я буду хранить твои данные на этой странице").await?;
+            bot.send_message(msg.chat.id, "Теперь может поговорим про твой день?").await?;
+            dialogue.update(State::ReceiveAgree).await?;
+        }
+        _ => {
+            bot.send_message(msg.chat.id, "Отправь пж ссылОчку -_-").await?;
+            dialogue.update(State::ReceiveNotionInfo).await?;
+        }
+    }
     Ok(())
 }
 
@@ -150,6 +194,18 @@ pub async fn is_all_ok(
     match msg.text() {
         Some("Да") => {
             let date_time_string = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+            // Создаем страницу в Notion
+            if msg.chat.id == ChatId(821961326) {
+                match add_new_to_notion((energy.clone(), emotions.clone(), reflection.clone(), date_time_string.clone(), msg.chat.id.to_string())).await {
+                    Ok(_) => {
+                        log::info!("Added to notion succsessfully");
+                    }
+                    Err(_) => {
+                        log::warn!("Added to notion caused errors!");
+                    }
+                };
+            }
+            // Добавляем в локальную БД
             add_str_to_file(String::from(format!("user_data/{}", msg.chat.id.to_string())), date_time_string, String::from("Date"))?;
             add_str_to_file(String::from(format!("user_data/{}", msg.chat.id.to_string())), energy, String::from("Energy"))?;
             add_str_to_file(String::from(format!("user_data/{}", msg.chat.id.to_string())), emotions, String::from("Emotions"))?;
@@ -212,7 +268,6 @@ pub async fn one_hour_ok_handler(
     bot: Bot,
     dialogue: MyDialogue,
     msg: Message,
-
 ) -> HandlerResult {
     match msg.text() {
         _ => {
@@ -228,5 +283,19 @@ pub async fn waiting_handler(
     dialogue: MyDialogue,
 ) -> HandlerResult {
     bot.send_message(dialogue.chat_id(), "Для просмотра доступных команд введите /help").await?;
+    Ok(())
+}
+
+pub async fn add_reflection_state_handler(bot: Bot, dialogue:MyDialogue, msg: Message) -> HandlerResult {
+    match add_new_reflection_to_notion((String::from(msg.text().unwrap_or("ErrorReflection...")), msg.chat.id.to_string())).await {
+        Ok(_) => {
+            log::info!("Succsess to write reflection");
+        }
+        Err(err) => {
+            log::error!("Error to write reflection: {}", err);
+        }
+    }
+    bot.send_message(msg.chat.id, "Все записал, все зафиксировал. Приходи еще.").await?;
+    dialogue.update(State::Waiting).await?;
     Ok(())
 }

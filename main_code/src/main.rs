@@ -46,10 +46,11 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![Command::Help].endpoint(help_handler))
         .branch(case![Command::New].endpoint(restart_handler))
         .branch(case![Command::Restart].endpoint(restart_handler))
-        .branch(case![Command::AddEmotions].endpoint(add_emotions_handler))
+        .branch(case![Command::AddReflection].endpoint(add_reflection_handler))
         .branch(case![Command::SendUserData].endpoint(send_user_data))
         .branch(case![Command::DeleteAllData].endpoint(delete_all_data))
-        .branch(case![Command::Sleep].endpoint(sleep_handler));
+        .branch(case![Command::Sleep].endpoint(sleep_handler))
+        .branch(case![Command::ChangeDBId].endpoint(change_db_id));
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
@@ -61,7 +62,10 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![State::IsAllOk { energy, emotions, reflection }].endpoint(is_all_ok))
         .branch(case![State::DeleteAllUserData].endpoint(delete_handler))
         .branch(case![State::OneHourOk].endpoint(one_hour_ok_handler))
-        .branch(case![State::Waiting].endpoint(waiting_handler));
+        .branch(case![State::Waiting].endpoint(waiting_handler))
+        .branch(case![State::ReceiveToNotion].endpoint(receive_to_notion))
+        .branch(case![State::ReceiveNotionInfo].endpoint(receive_notion_info))
+        .branch(case![State::AddNewReflection].endpoint(add_reflection_state_handler));
         
     dialogue::enter::<Update, InMemStorage<State>, State, _>()
         .branch(message_handler)
