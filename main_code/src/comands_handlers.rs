@@ -29,11 +29,15 @@ pub async fn restart_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> Ha
 pub async fn add_reflection_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
     let chat_id = msg.chat.id.to_string();
     let path_str = format!("user_conf/{}", chat_id);
-    if Path::new(&path_str).exists() {
-        bot.send_message(msg.chat.id, "Для этой функции нужна интеграция с Notion, /changedbid").await?;
-    } else {
-        bot.send_message(msg.chat.id, "Я всегда готов тебя выслушать. Давай, рассказывай!").await?;
-        dialogue.update(State::AddNewReflection).await?;
+    match Path::new(&path_str).try_exists() {
+        Ok(_) => {
+            bot.send_message(msg.chat.id, "Я всегда готов тебя выслушать. Давай, рассказывай!").await?;
+            dialogue.update(State::AddNewReflection).await?;
+        }
+        Err(err) => {
+            bot.send_message(msg.chat.id, "Для этой функции нужна интеграция с Notion, /changedbid").await?;
+            log::warn!("No notion added error: {err}")
+        }
     }
     Ok(())
 }
