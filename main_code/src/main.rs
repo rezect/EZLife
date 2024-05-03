@@ -2,6 +2,12 @@ mod add_functions;
 mod enums;
 mod comands_handlers;
 mod handler_functions;
+mod yagpt_apis;
+mod notion_apis;
+mod shemas {
+    pub mod notion_shemas;
+    pub mod ya_gpt_shemas;
+}
 
 use teloxide::{
     dispatching::{dialogue::{self, InMemStorage}, UpdateHandler}, prelude::*
@@ -10,6 +16,12 @@ use comands_handlers::*;
 use handler_functions::*;
 use add_functions::*;
 use enums::*;
+use notion_apis::*;
+use shemas::{
+    notion_shemas::*,
+    ya_gpt_shemas::*
+};
+use yagpt_apis::*;
 
 type MyDialogue = Dialogue<State, InMemStorage<State>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
@@ -24,7 +36,7 @@ async fn main() {
     let my_id = ChatId(821961326);
     match bot.send_message(my_id, "I`ve been started...").await {
         Ok(_) => {
-            log::info!("Succsess to send message 'I`ve been started...'");
+            log::info!("Success to send message 'I`ve been started...'");
         }
         Err(err) => {
             log::error!("Error to send message 'I`ve been started...': {}", err);

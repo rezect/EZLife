@@ -5,7 +5,6 @@ use chrono::Local;
 // use tokio_cron_scheduler::{Job, JobScheduler};
 use std::path::Path;
 
-
 // Функции-обработчики состояний
 pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
 
@@ -56,7 +55,7 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
         }
         dialogue.update(State::ReceiveToNotion).await?;
     } else {
-        bot.send_message(msg.chat.id, "Как прошел твой день? Можешь поделиться со мной впечатлениями!").await?;
+        bot.send_message(msg.chat.id, "Как прошел твой день? Готов поговорить про него?").await?;
         let chat_id = msg.chat.id.to_string();
         let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
         let path_str = format!("user_data/{}", chat_id);
@@ -111,19 +110,23 @@ pub async fn receive_notion_info(bot: Bot, dialogue: MyDialogue, msg: Message) -
 }
 
 pub async fn receive_agree(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
-    match msg.text() {
-        Some("Да") => {
+    let ya_response = is_user_ready_ai(msg.text().unwrap_or("NoText").to_owned()).await;
+    match ya_response {
+        'Д' => {
             bot.send_message(msg.chat.id, "Хорошо, начнем с энергии").await?;
             bot.send_message(msg.chat.id, "Какая она была сегодня?").await?;
             dialogue.update(State::ReceiveEnergy).await?;
         }
-        Some("Нет") => {
+        'Н' => {
             bot.send_message(msg.chat.id, "Тогда напиши Да когда удобно будет").await?;
-            bot.send_message(msg.chat.id, "Через час?").await?;
-            dialogue.update(State::OneHourOk).await?;
+            dialogue.update(State::Waiting).await?;
+        }
+        'N' => {
+            bot.send_message(msg.chat.id, "Неочень тебя понял, напиши еще раз").await?;
+            dialogue.update(State::Waiting).await?;
         }
         _ => {
-            bot.send_message(msg.chat.id, "Напиши только Да или Нет, зайка ;)").await?;
+            bot.send_message(msg.chat.id, "Я не понял твой ответ. Попробуй еще раз.").await?;
             dialogue.update(State::ReceiveAgree).await?;
         }
     }
