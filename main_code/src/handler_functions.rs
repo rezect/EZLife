@@ -295,9 +295,18 @@ pub async fn one_hour_ok_handler(
 
 pub async fn waiting_handler(
     bot: Bot,
+    msg: Message,
     dialogue: MyDialogue,
 ) -> HandlerResult {
-    bot.send_message(dialogue.chat_id(), "Для просмотра доступных команд введите /help").await?;
+    match msg.text() {
+        Some(text) => {
+            let smart_answer = smart_waiting_bot(text).await;
+            bot.send_message(dialogue.chat_id(), smart_answer).await?;
+        }
+        _ => {
+            bot.send_message(dialogue.chat_id(), "Я не понял твой ответ. Отправь мне что-нибудь... текстовое").await?;
+        }
+    }
     Ok(())
 }
 
