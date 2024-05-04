@@ -17,12 +17,8 @@ use handler_functions::*;
 use add_functions::*;
 use enums::*;
 use notion_apis::*;
-use shemas::{
-    notion_shemas::*,
-    ya_gpt_shemas::*
-};
-use yagpt_apis::*;
-
+use shemas::notion_shemas::*;
+use teloxide::types::ParseMode;
 type MyDialogue = Dialogue<State, InMemStorage<State>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
@@ -31,10 +27,12 @@ async fn main() {
     dotenvy::dotenv().expect("dotenv error");
     pretty_env_logger::init();
     log::info!("Starting bot...");
-    
+
     let bot = Bot::from_env();
     let my_id = ChatId(821961326);
-    match bot.send_message(my_id, "I`ve been started...").await {
+    match bot.send_message(my_id, "**HUY**")
+    .parse_mode(ParseMode::MarkdownV2)
+    .await {
         Ok(_) => {
             log::info!("Success to send message 'I`ve been started...'");
         }
@@ -42,7 +40,6 @@ async fn main() {
             log::error!("Error to send message 'I`ve been started...': {}", err);
         }
     }
-
     Dispatcher::builder(bot, shema())
     .dependencies(dptree::deps![InMemStorage::<State>::new()])
     .enable_ctrlc_handler()
