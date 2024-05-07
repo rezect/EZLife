@@ -159,12 +159,8 @@ pub async fn receive_reflection(
     tokio::time::sleep(Duration::from_millis(200)).await;
     match msg.text() {
         Some(text) => {
-            bot.send_message(msg.chat.id, format!("Отлично, день закончен, поздравляю!\nВот краткий итог:")).await?;
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, format!("Energy: {}\nEmotions: {}\nReflection: {}", energy, emotions, text)).await?;
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Всё верно?").await?;
-            dialogue.update(State::IsAllOk { energy, emotions, reflection: (text.into()) }).await?;
+            bot.send_message(msg.chat.id, format!("Какую дашь общую оценку дню? (от 0 до 10)")).await?;
+            dialogue.update(State::ReceiveRate { energy, emotions, reflection: (text.into()) }).await?;
         }
         _ => {
             bot.send_message(msg.chat.id, "Напиши что-нибудь, котик ;)").await?;
@@ -174,10 +170,39 @@ pub async fn receive_reflection(
     Ok(())
 }
 
-pub async fn is_all_ok(
+pub async fn receive_rate(
     bot: Bot,
     dialogue: MyDialogue,
     (energy, emotions, reflection): (String, String, String),
+    msg: Message
+) -> HandlerResult {
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    match msg.text().unwrap_or("Error").to_owned().parse::<u32>() {
+        Ok(num) => {
+            if num > 10 {
+                bot.send_message(msg.chat.id, "Отправь число не больше 10").await?;
+                dialogue.update(State::ReceiveRate { energy, emotions, reflection }).await?;
+                return Ok(())
+            }
+            bot.send_message(msg.chat.id, format!("Отлично, день закончен, поздравляю!\nВот краткий итог:")).await?;
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            bot.send_message(msg.chat.id, format!("Energy: {}\nEmotions: {}\nRate: {}", energy, emotions, num)).await?;
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            bot.send_message(msg.chat.id, "Всё верно?").await?;
+            dialogue.update(State::IsAllOk { energy, emotions, reflection, rate: (num) }).await?;
+        }
+        Err(_) => {
+            bot.send_message(msg.chat.id, "Отправь число от 0 до 10").await?;
+            dialogue.update(State::ReceiveRate { energy, emotions, reflection }).await?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn is_all_ok(
+    bot: Bot,
+    dialogue: MyDialogue,
+    (energy, emotions, reflection, rate): (String, String, String, u32),
     msg: Message
 ) -> HandlerResult {
     use std::fs::OpenOptions;
@@ -187,7 +212,7 @@ pub async fn is_all_ok(
             let date_time_string = Local::now().format("%d-%m-%Y %H:%M:%S").to_string();
             // Создаем страницу в Notion (пока только для меня)
             if msg.chat.id == ChatId(821961326) {
-                match add_new_to_notion((energy.clone(), emotions.clone(), reflection.clone(), date_time_string.clone(), msg.chat.id.to_string())).await {
+                match add_new_to_notion((energy.clone(), emotions.clone(), reflection.clone(), rate.clone(), date_time_string.clone(), msg.chat.id.to_string())).await {
                     Ok(_) => {
                         log::info!("Added to notion succsessfully");
                     }
@@ -217,11 +242,11 @@ pub async fn is_all_ok(
         "нет" => {
             // В разработке
             bot.send_message(msg.chat.id, "Эта функция дорабатывается... Пока можете использовать /restart").await?;
-            dialogue.update(State::IsAllOk { energy, emotions, reflection }).await?;
+            dialogue.update(State::IsAllOk { energy, emotions, reflection, rate }).await?;
         }
         _ => {
             bot.send_message(msg.chat.id, "Я не понял твой ответ. Отправь либо Да либо Нет.").await?;
-            dialogue.update(State::IsAllOk { energy, emotions, reflection }).await?;
+            dialogue.update(State::IsAllOk { energy, emotions, reflection, rate }).await?;
         }
     }
     Ok(())

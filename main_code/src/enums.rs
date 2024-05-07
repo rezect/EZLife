@@ -36,10 +36,16 @@ pub enum State {
         energy: String,
         emotions: String,
     },
+    ReceiveRate {
+        energy: String,
+        emotions: String,
+        reflection: String,
+    },
     IsAllOk {
         energy: String,
         emotions: String,
         reflection: String,
+        rate: u32
     },
     Waiting,
     DeleteAllUserData,

@@ -6,7 +6,7 @@ use crate::{notion_shema_new_page, notion_shema_add_reflection};
 
 
 pub async fn add_new_to_notion(
-    (energy, emotions, reflection, cur_date, chat_id): (String, String, String, String, String)
+    (energy, emotions, reflection, rate, cur_date, chat_id): (String, String, String, u32, String, String)
 ) -> HandlerResult {    
     let mut data_file = File::open(format!("user_conf/{}", chat_id)).expect("File not found");
     let mut database_id = String::new();
@@ -23,7 +23,7 @@ pub async fn add_new_to_notion(
     let month_name = month_names[month_number - 1];
     let day = local_date.day();
 
-    let response = notion_shema_new_page((energy, emotions, reflection, cur_date), (day, month_name, database_id)).await;
+    let response = notion_shema_new_page((energy, emotions, reflection, rate, cur_date), (day, month_name, database_id)).await;
 
     if response.status().is_success() {
         // Получаем тело ответа как строку

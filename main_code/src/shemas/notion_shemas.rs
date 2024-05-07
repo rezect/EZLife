@@ -3,7 +3,7 @@ use reqwest::{header, Client, Response};
 
 
 pub async fn notion_shema_new_page(
-    (energy, emotions, reflection, cur_date): (String, String, String, String),
+    (energy, emotions, reflection, rate, cur_date): (String, String, String, u32, String),
     (day, month_name, database_id): (u32, &str, String)
 
 ) -> Response {
@@ -49,7 +49,10 @@ pub async fn notion_shema_new_page(
                 "select": {
                     "name": energy
                 }
-            }
+            },
+            "Rate": {
+                "number": rate
+            },
         },
         "children": [
             {
@@ -60,7 +63,7 @@ pub async fn notion_shema_new_page(
                         {
                             "type": "text",
                             "text": {
-                            "content": "🧠Emotions:"
+                            "content": "🎆Emotions:"
                             }
                         }
                     ]
