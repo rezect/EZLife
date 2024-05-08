@@ -1,8 +1,4 @@
-use crate::HandlerResult;
-use chrono::{Datelike, Local};
-use std::fs::File;
-use std::io::Read;
-use crate::{notion_shema_new_page, notion_shema_add_reflection};
+use crate::*;
 
 
 pub async fn add_new_to_notion(
@@ -13,7 +9,7 @@ pub async fn add_new_to_notion(
     data_file.read_to_string(&mut database_id).expect("File reading failed");
     database_id.pop();
 
-    // Получаем дату в формате 4 апр.
+    // Получаем дату в формате "4 апр."
     let local_date = Local::now();
     let month_names = [
         "янв.", "фев", "марта", "апр.", "мая", "июня",

@@ -1,5 +1,4 @@
-use serde_json::json;
-use reqwest::{header, Client, Response};
+use crate::*;
 
 
 pub async fn notion_shema_new_page(
@@ -7,9 +6,6 @@ pub async fn notion_shema_new_page(
     (day, month_name, database_id): (u32, &str, String)
 
 ) -> Response {
-    use dotenvy::dotenv;
-    use std::env;
-
     dotenv().ok();
     let notion_token = env::var("MY_NOTION_TOKEN").expect("MY_NOTION_TOKEN must be set in .env");
 
@@ -125,10 +121,6 @@ pub async fn notion_shema_new_page(
 pub async fn notion_shema_add_reflection(
     reflection: String
 ) -> Response {
-    use chrono::prelude::*;
-    use dotenvy::dotenv;
-    use std::env;
-
     dotenv().ok();
     let notion_token = env::var("MY_NOTION_TOKEN").expect("MY_NOTION_TOKEN must be set in .env");
 

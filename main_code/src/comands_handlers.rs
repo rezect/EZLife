@@ -1,15 +1,5 @@
-use teloxide::{
-    prelude::*, types::InputFile, utils::command::BotCommands
-};
-use std::path::Path;
-use std::io::Write;
-use std::fs::File;
-use crate::{
-    shemas::ya_gpt_shemas::smart_hello_asking,
-    ParseMode,
-};
+use crate::*;
 
-use crate::{Command, State, MyDialogue, HandlerResult};
 
 pub async fn help_handler(bot: Bot, msg: Message) -> HandlerResult {
     bot.send_message(msg.chat.id, Command::descriptions().to_string()).await?;
@@ -25,11 +15,8 @@ pub async fn restart_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> Ha
         let mut file = File::create(&path)?;
         writeln!(file, "Start documentation! Nickname - {}", user_name)?;
     }
-    let smart_hello = smart_hello_asking().await;
-    bot.send_message(msg.chat.id, smart_hello)
-        .parse_mode(ParseMode::MarkdownV2)
-        .await?;
-    dialogue.update(State::ReceiveAgree).await?;
+    bot.send_message(msg.chat.id, "Когда будешь готов поговорить про твой день, напиши мне /new").await?;
+    dialogue.update(State::Waiting).await?;
     Ok(())
 }
 

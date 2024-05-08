@@ -1,8 +1,4 @@
-use serde_json::json;
-use reqwest::{header, Client};
-use dotenvy::dotenv;
-use std::env;
-use crate::add_functions::format_str;
+use crate::*;
 
 
 pub async fn smart_waiting_bot(
@@ -55,63 +51,6 @@ pub async fn smart_waiting_bot(
 
     let mut text_response = json_data["result"]["alternatives"][0]["message"]["text"].to_string()[1..].to_string();
     text_response.pop().unwrap();
-
-    return format_str(&text_response);
-}
-
-pub async fn smart_hello_asking() -> String {
-    dotenv().ok();
-    let api_key = env::var("YAGPT_API_KEY").expect("YAGPT_API_KEY must be set in .env");
-    let cloud_id = env::var("YAGPT_CLOUD_ID").expect("YAGPT_CLOUD_ID must be set in .env");
-    let folder_id = env::var("YAGPT_FOLDER_ID").expect("YAGPT_FOLDER_ID must be set in .env");
-
-    let url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion";
-    let client = Client::new();
-    let mut headers = header::HeaderMap::new();
-    headers.insert("Authorization", header::HeaderValue::from_str(&format!("Api-Key {}", api_key)).expect("Invalid Api-Key token"));
-    headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
-    headers.insert("x-folder-id", header::HeaderValue::from_str(&cloud_id).expect("Invalid folder id"));
-
-    let request_body = json!(
-        {
-            "modelUri": format!("gpt://{}/yandexgpt/latest", folder_id),
-            "completionOptions": {
-                  "stream": false,
-                  "temperature": 0.5,
-                  "maxTokens": 50
-              },
-              "messages": [
-                {
-                    "role": "system",
-                    "text": "Ты - умный бот, который по разному задает вопрос 'Готовы поговорить о том, как прошёл ваш день?'"
-                },
-                {
-                    "role": "user",
-                    "text": "Спроси меня."
-                },
-            ]
-        }
-    );
-
-    let response = client
-        .post(url.to_string())
-        .headers(headers)
-        .body(request_body.to_string())
-        .send()
-        .await;
-
-    let s = match response {
-        Ok(response) => response.text().await.unwrap(),
-        Err(_) => panic!("Error!"),
-    };
-
-    let json_data: serde_json::Value = serde_json::from_str(&s)
-        .expect("Can't parse json");
-
-    let mut text_response = json_data["result"]["alternatives"][0]["message"]["text"].to_string()[1..].to_string();
-    text_response.pop().unwrap();
-
-    log::info!("{}", text_response);
 
     return format_str(&text_response);
 }

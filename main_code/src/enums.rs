@@ -1,4 +1,5 @@
-use teloxide::utils::command::BotCommands;
+use crate::BotCommands;
+
 
 #[derive(BotCommands, Clone)]
 #[command(rename_rule = "lowercase", description = "These commands are supported:")]
@@ -27,7 +28,6 @@ pub enum State {
     Start,
     ReceiveToNotion,
     ReceiveNotionInfo,
-    ReceiveAgree,
     ReceiveEnergy,
     ReceiveEmotions {
         energy: String,

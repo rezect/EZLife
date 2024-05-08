@@ -9,18 +9,55 @@ mod shemas {
     pub mod ya_gpt_shemas;
 }
 
-use teloxide::{
-    dispatching::{dialogue::{self, InMemStorage}, UpdateHandler}, prelude::*
+use std::{
+    env,
+    fs::File,
+    path::Path,
+    io::Read,
+    io::Write,
+    time::Duration
 };
+use teloxide::{
+    dispatching::{
+        dialogue::{
+            self,
+            InMemStorage
+        },
+        UpdateHandler,
+    },
+    types::{
+        InputFile,
+        ParseMode
+    },
+    prelude::*,
+    utils::command::BotCommands,
+};
+use reqwest::{
+    header,
+    Client,
+    Response
+};
+use chrono::{
+    Datelike,
+    Local,
+    prelude::*
+};
+use shemas::{
+    notion_shemas::*,
+    ya_gpt_shemas::*,
+};
+use serde_json::json;
 use comands_handlers::*;
 use handler_functions::*;
 use add_functions::*;
 use enums::*;
+use dotenvy::dotenv;
 use notion_apis::*;
-use shemas::notion_shemas::*;
-use teloxide::types::ParseMode;
+
+
 type MyDialogue = Dialogue<State, InMemStorage<State>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
 
 #[tokio::main]
 async fn main() {
@@ -64,7 +101,6 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
     let message_handler = Update::filter_message()
         .branch(command_handler)
         .branch(case![State::Start].endpoint(start))
-        .branch(case![State::ReceiveAgree].endpoint(receive_agree))
         .branch(case![State::ReceiveEnergy].endpoint(receive_energy))
         .branch(case![State::ReceiveEmotions { energy }].endpoint(receive_emotions))
         .branch(case![State::ReceiveReflection { energy, emotions }].endpoint(receive_reflection))

@@ -1,10 +1,4 @@
 use crate::*;
-use std::fs::File;
-use std::io::Write;
-use chrono::Local;
-use std::path::Path;
-use std::time::Duration;
-use crate::shemas::ya_gpt_shemas::*;
 
 
 // Функции-обработчики состояний
@@ -24,10 +18,7 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
         }
         dialogue.update(State::ReceiveToNotion).await?;
     } else {
-        let smart_hello = smart_hello_asking().await;
-        bot.send_message(msg.chat.id, smart_hello)
-            .parse_mode(ParseMode::MarkdownV2)
-            .await?;
+        bot.send_message(msg.chat.id, "Когда будешь готов поговорить про твой день, напиши мне /new").await?;
         let chat_id = msg.chat.id.to_string();
         let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
         let path_str = format!("user_data/{}", chat_id);
@@ -36,7 +27,7 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
             let mut file = File::create(&path)?;
             writeln!(file, "Start documentation! Nickname - {}", user_name)?;
         }
-        dialogue.update(State::ReceiveAgree).await?;
+        dialogue.update(State::Waiting).await?;
     }
     Ok(())
 }
@@ -50,13 +41,13 @@ pub async fn receive_to_notion(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
         }
         "нет" => {
             bot.send_message(msg.chat.id, "Тогда можешь позже попробовать, котик ;)").await?;
-            let smart_hello = smart_hello_asking().await;
-            bot.send_message(msg.chat.id, smart_hello)
-                .parse_mode(ParseMode::MarkdownV2)
-                .await?;
-            dialogue.update(State::ReceiveAgree).await?;
+            bot.send_message(msg.chat.id, "Когда будешь готов поговорить про твой день, напиши мне /new").await?;
+            dialogue.update(State::Waiting).await?;
         }
-        _ => {}
+        _ => {
+            bot.send_message(msg.chat.id, "Ладно, если захочешь подключить Notion, напиши мне /changedbid").await?;
+            dialogue.update(State::Waiting).await?;
+        }
     }
     Ok(())
 }
@@ -74,32 +65,12 @@ pub async fn receive_notion_info(bot: Bot, dialogue: MyDialogue, msg: Message) -
             log::info!("Success to save notion token to file");
             bot.send_message(msg.chat.id, "Спасибо, теперь я буду хранить твои данные на этой странице").await?;
             tokio::time::sleep(Duration::from_millis(100)).await;
-            bot.send_message(msg.chat.id, "Теперь может поговорим про твой день?").await?;
-            dialogue.update(State::ReceiveAgree).await?;
+            bot.send_message(msg.chat.id, "Когда будешь готов поговорить про твой день, напиши мне /new").await?;
+            dialogue.update(State::Waiting).await?;
         }
         _ => {
             bot.send_message(msg.chat.id, "Отправь пж ссылОчку -_-").await?;
             dialogue.update(State::ReceiveNotionInfo).await?;
-        }
-    }
-    Ok(())
-}
-
-pub async fn receive_agree(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
-    match msg.text().unwrap_or("None").to_lowercase().as_str() {
-        "да" => {
-            bot.send_message(msg.chat.id, "Хорошо, начнем с энергии").await?;
-            bot.send_message(msg.chat.id, "Какая она была сегодня?").await?;
-            dialogue.update(State::ReceiveEnergy).await?;
-        }
-        "нет" => {
-            bot.send_message(msg.chat.id, "Тогда напиши когда удобно будет").await?;
-            bot.send_message(msg.chat.id, "А я пока подремлю...").await?;
-            dialogue.update(State::Waiting).await?;
-        }
-        _ => {
-            bot.send_message(msg.chat.id, "Я не понял твой ответ. Отправь Да или Нет.").await?;
-            dialogue.update(State::ReceiveAgree).await?;
         }
     }
     Ok(())
