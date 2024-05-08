@@ -1,119 +1,117 @@
-use teloxide::{
-    dispatching::dialogue::InMemStorage,
-    prelude::*
+mod add_functions;
+mod enums;
+mod comands_handlers;
+mod handler_functions;
+mod yagpt_apis;
+mod notion_apis;
+mod shemas {
+    pub mod notion_shemas;
+    pub mod ya_gpt_shemas;
+}
+
+use std::{
+    env,
+    fs::File,
+    path::Path,
+    io::Read,
+    io::Write,
+    time::Duration
 };
+use teloxide::{
+    dispatching::{
+        dialogue::{
+            self,
+            InMemStorage
+        },
+        UpdateHandler,
+    },
+    types::{
+        InputFile,
+        ParseMode
+    },
+    prelude::*,
+    utils::command::BotCommands,
+};
+use reqwest::{
+    header,
+    Client,
+    Response
+};
+use chrono::{
+    Datelike,
+    Local,
+};
+use tokio::time::sleep;
+use shemas::{
+    notion_shemas::*,
+    ya_gpt_shemas::*,
+};
+use serde_json::json;
+use comands_handlers::*;
+use handler_functions::*;
+use add_functions::*;
+use enums::*;
+use std::fs::OpenOptions;
+use dotenvy::dotenv;
+use notion_apis::*;
+
 
 type MyDialogue = Dialogue<State, InMemStorage<State>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
-async fn receive_age(
-    bot: Bot,
-    dialogue: MyDialogue,
-    full_name: String,
-    msg: Message
-) -> HandlerResult {
-    match msg.text().map(|text| text.parse::<u8>()) {
-        Some(Ok(age)) => {
-            bot.send_message(msg.chat.id, "What`s your location?").await?;
-            dialogue.update(State::ReceiveLocation { full_name: (full_name), age: (age) }).await?;
-        }
-        _ => {
-            bot.send_message(msg.chat.id, "Send me a number.").await?;
-        }
-    }
-
-    Ok(())
-}
-
-async fn receive_location(
-    bot: Bot,
-    dialogue: MyDialogue,
-    (full_name, age): (String, u8),
-    msg: Message,
-) -> HandlerResult {
-    match msg.text().map(|text| text.parse::<String>()) {
-        Some(Ok(location)) => {
-            let message = 
-                format!("Full name {full_name}\nAge: {age}\nLocation: {location}");
-            bot.send_message(msg.chat.id, message).await?;
-            dialogue.exit().await?;
-        }
-        _ => {
-            bot.send_message(msg.chat.id, "Send me a text message.").await?;
-        }
-    }
-
-    Ok(())
-}
-
-async fn start(
-    bot: Bot,
-    dialogue: MyDialogue,
-    msg: Message
-) -> HandlerResult {
-    bot.send_message(msg.chat.id, "Let's start! What's your full name?").await?;
-    dialogue.update(State::ReceiveFullName).await?;
-
-    Ok(())
-}
-
-async fn receive_full_name(
-    bot: Bot,
-    dialogue: MyDialogue,
-    msg: Message
-) -> HandlerResult {
-    match msg.text().map(|text| text.parse::<String>()) {
-        Some(Ok(text)) => {
-            bot.send_message(msg.chat.id, "What`s your age?").await?;
-            dialogue.update(State::ReceiveAge { full_name: (text) }).await?;
-        }
-        _ => {
-            bot.send_message(msg.chat.id, "Send me plain text.").await?;
-        }
-    }
-
-    Ok(())
-}
-
-#[derive(Clone, Default)]
-pub enum State {
-    #[default]
-    Start,
-    ReceiveFullName,
-    ReceiveAge {
-        full_name: String,
-    },
-    ReceiveLocation {
-        full_name: String,
-        age: u8,
-    },
-}
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>>  {
+async fn main() {
+    dotenvy::dotenv().expect("dotenv error");
     pretty_env_logger::init();
-    dotenvy::dotenv().expect("505");
-    log::info!("Starting my bot...");
+    log::info!("Starting bot...");
+
     let bot = Bot::from_env();
     let my_id = ChatId(821961326);
-    
-    bot.send_message(my_id, "Hi").await?;
-    Dispatcher::builder(
-        bot,
-        Update::filter_message()
-            .enter_dialogue::<Message, InMemStorage<State>, State>()
-            .branch(dptree::case![State::Start].endpoint(start))
-            .branch(dptree::case![State::ReceiveFullName].endpoint(receive_full_name))
-            .branch(dptree::case![State::ReceiveAge { full_name }].endpoint(receive_age))
-            .branch(
-                dptree::case![State::ReceiveLocation { full_name, age }].endpoint(receive_location),
-            ),
-    )
+    match bot.send_message(my_id, "I started...")
+    .parse_mode(ParseMode::MarkdownV2)
+    .await {
+        Ok(_) => {
+            log::info!("Success to send message 'I`ve been started...'");
+        }
+        Err(err) => {
+            log::error!("Error to send message 'I`ve been started...': {}", err);
+        }
+    }
+    Dispatcher::builder(bot, shema())
     .dependencies(dptree::deps![InMemStorage::<State>::new()])
     .enable_ctrlc_handler()
     .build()
     .dispatch()
     .await;
+}
 
-    Ok(())
+fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+    use dptree::case;
+
+    let command_handler = teloxide::filter_command::<Command, _>()
+        .branch(case![Command::Help].endpoint(help_handler))
+        .branch(case![Command::New].endpoint(restart_handler))
+        .branch(case![Command::Restart].endpoint(restart_handler))
+        .branch(case![Command::SendUserData].endpoint(send_user_data))
+        .branch(case![Command::DeleteAllData].endpoint(delete_all_data))
+        .branch(case![Command::Sleep].endpoint(sleep_handler))
+        .branch(case![Command::ChangeDBId].endpoint(change_db_id));
+
+    let message_handler = Update::filter_message()
+        .branch(command_handler)
+        .branch(case![State::Start].endpoint(start))
+        .branch(case![State::ReceiveEnergy].endpoint(receive_energy))
+        .branch(case![State::ReceiveEmotions { energy }].endpoint(receive_emotions))
+        .branch(case![State::ReceiveReflection { energy, emotions }].endpoint(receive_reflection))
+        .branch(case![State::ReceiveRate { energy, emotions, reflection }].endpoint(receive_rate))
+        .branch(case![State::IsAllOk { energy, emotions, reflection, rate }].endpoint(is_all_ok))
+        .branch(case![State::DeleteAllUserData].endpoint(delete_handler))
+        .branch(case![State::Waiting].endpoint(waiting_handler))
+        .branch(case![State::ReceiveToNotion].endpoint(receive_to_notion))
+        .branch(case![State::ReceiveNotionInfo].endpoint(receive_notion_info));
+        
+    dialogue::enter::<Update, InMemStorage<State>, State, _>()
+        .branch(message_handler)
+    
 }
