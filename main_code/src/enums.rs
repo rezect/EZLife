@@ -10,8 +10,6 @@ pub enum Command {
     Restart,
     #[command(description = "Start new session")]
     New,
-    #[command(description = "Add your reflection")]
-    AddReflection,
     #[command(description = "Get your data")]
     SendUserData,
     #[command(description = "Delete all your data")]
@@ -49,6 +47,4 @@ pub enum State {
     },
     Waiting,
     DeleteAllUserData,
-    OneHourOk,
-    AddNewReflection,
 }

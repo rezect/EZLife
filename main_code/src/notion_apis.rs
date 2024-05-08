@@ -31,24 +31,3 @@ pub async fn add_new_to_notion(
 
     Ok(())
 }
-
-pub async fn add_new_reflection_to_notion(
-    (reflection, chat_id): (String, String)
-) -> HandlerResult {
-
-    let mut data_file = File::open(format!("user_conf/{}", chat_id)).expect("File not found");
-    let mut database_id = String::new();
-    data_file.read_to_string(&mut database_id).expect("File reading failed");
-
-    let response = notion_shema_add_reflection(reflection).await;
-
-    if response.status().is_success() {
-        // Получаем тело ответа как строку
-        let body = response.text().await?;
-        log::info!("Ответ сервера: {}", body);
-    } else {
-        log::error!("Ошибка: {:?}", response);
-    }
-
-    Ok(())
-}
