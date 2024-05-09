@@ -15,8 +15,9 @@ pub async fn restart_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> Ha
         let mut file = File::create(&path)?;
         writeln!(file, "Start documentation! Nickname - {}", user_name)?;
     }
-    bot.send_message(msg.chat.id, "Когда будешь готов поговорить про твой день, напиши мне /new").await?;
-    dialogue.update(State::Waiting).await?;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    bot.send_message(msg.chat.id, "Привееет, расскажи какая у тебя была сегодня энергия?").await?;
+    dialogue.update(State::ReceiveEnergy).await?;
     Ok(())
 }
 
