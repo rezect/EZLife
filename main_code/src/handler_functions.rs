@@ -277,6 +277,8 @@ pub async fn waiting_handler(
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            sleep(Duration::from_millis(300)).await;
+            bot.send_message(msg.chat.id, "Передаю инопланетянам 👽 ваш запрос...").await?;
             let smart_answer = smart_waiting_bot(text).await;
             bot.send_message(msg.chat.id, smart_answer)
                 .parse_mode(ParseMode::MarkdownV2)
