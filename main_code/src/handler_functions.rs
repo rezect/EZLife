@@ -7,29 +7,16 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
     tokio::time::sleep(Duration::from_millis(300)).await;
     bot.send_message(msg.chat.id, "Добро пожаловать, путник! Я бот, который будет выслушивать все твои жалобы и радости ;)").await?;
     tokio::time::sleep(Duration::from_millis(200)).await;
-    if msg.chat.id == ChatId(821961326) {
-        bot.send_message(msg.chat.id, "Давай начнем с настройки Notion для более удобного хранения твоих записей?").await?;
-        let chat_id = msg.chat.id.to_string();
-        let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
-        let path_str = format!("user_data/{}", chat_id);
-        let path = Path::new(&path_str);
-        if !path.exists() {
-            let mut file = File::create(&path)?;
-            writeln!(file, "Start documentation! Nickname - {}", user_name)?;
-        }
-        dialogue.update(State::ReceiveToNotion).await?;
-    } else {
-        bot.send_message(msg.chat.id, "Когда будешь готов поговорить про твой день, напиши мне /new").await?;
-        let chat_id = msg.chat.id.to_string();
-        let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
-        let path_str = format!("user_data/{}", chat_id);
-        let path = Path::new(&path_str);
-        if !path.exists() {
-            let mut file = File::create(&path)?;
-            writeln!(file, "Start documentation! Nickname - {}", user_name)?;
-        }
-        dialogue.update(State::Waiting).await?;
+    bot.send_message(msg.chat.id, "Давай начнем с настройки Notion для более удобного хранения твоих записей?").await?;
+    let chat_id = msg.chat.id.to_string();
+    let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
+    let path_str = format!("user_data/{}", chat_id);
+    let path = Path::new(&path_str);
+    if !path.exists() {
+        let mut file = File::create(&path)?;
+        writeln!(file, "Start documentation! Nickname - {}", user_name)?;
     }
+    dialogue.update(State::ReceiveToNotion).await?;
     Ok(())
 }
 
@@ -39,8 +26,11 @@ pub async fn receive_to_notion(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
             tokio::time::sleep(Duration::from_millis(200)).await;
             bot.send_message(msg.chat.id, "Отлично, давай начнем!").await?;
             tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Мне от тебя нужна ссылка на страницу, где ты будешь хранить свои данные:").await?;
-            dialogue.update(State::ReceiveNotionInfo).await?;
+            let ask_to_url = "Мне от тебя нужен токен, который ты получишь по ссылке: [*тык*](https://api.notion.com/v1/oauth/authorize?client_id=b8bc455c-98f6-46e2-bb90-8ea7a4c7ab23&response_type=code&owner=user&redirect_uri=https%3A%2F%2Fhttp%2F%2Fjirezectij.ru%2F)";
+            bot.send_message(msg.chat.id, ask_to_url)
+                .parse_mode(ParseMode::MarkdownV2)
+                .await?;
+            dialogue.update(State::GetNotionCode).await?;
         }
         "нет" => {
             tokio::time::sleep(Duration::from_millis(200)).await;
@@ -52,33 +42,55 @@ pub async fn receive_to_notion(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
         _ => {
             tokio::time::sleep(Duration::from_millis(200)).await;
             bot.send_message(msg.chat.id, "Ладно, если захочешь подключить Notion, напиши мне /changedbid").await?;
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            bot.send_message(msg.chat.id, "И когда будешь готов поговорить про твой день, напиши мне /new").await?;
             dialogue.update(State::Waiting).await?;
         }
     }
     Ok(())
 }
 
-pub async fn receive_notion_info(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
-    // https://www.notion.so/1ebb0c60b8864f668cc588eb9c816e91?v=8bc528af15334bda9803696341155178
+pub async fn write_down_notion_token(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+    let user_notion_token = get_notion_token_from_code(msg.text().unwrap_or("Get Notion token error").to_string()).await.trim_matches('"').to_string();
+    if user_notion_token == "null" {
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        bot.send_message(msg.chat.id, "Что-то не так с кодом который вы ввели, попробуйте еще раз.").await?;
+        dialogue.update(State::GetNotionCode).await?;
+    } else {
+        let chat_id: String = msg.chat.id.to_string();
+        let path_str = format!("user_tokens/{}", chat_id);
+        let path = Path::new(&path_str);
+        let mut file = File::create(&path)?;
+        writeln!(file, "{}", user_notion_token)?;
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        bot.send_message(msg.chat.id, "Все верной!\nЯ записал ваш токен.").await?;
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        bot.send_message(msg.chat.id, "Теперь пришлите мне ссылку на базу данных, где вы планируете хранить ваши дни.").await?;
+        dialogue.update(State::GetDBID).await?;
+    }
+    Ok(())
+}
+
+pub async fn get_db_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
     match msg.text() {
         Some(url) => {
             let chat_id: String = msg.chat.id.to_string();
             let db_token = &url[22..(22 + 32)];
-            let path_str = format!("user_conf/{}", chat_id);
+            let path_str = format!("user_db_ids/{}", chat_id);
             let path = Path::new(&path_str);
             let mut file = File::create(&path)?;
             writeln!(file, "{}", db_token)?;
             log::info!("Success to save notion token to file");
-            tokio::time::sleep(Duration::from_millis(300)).await;
-            bot.send_message(msg.chat.id, "Спасибо, теперь я буду хранить твои данные на этой странице").await?;
-            tokio::time::sleep(Duration::from_millis(300)).await;
-            bot.send_message(msg.chat.id, "Когда будешь готов поговорить про твой день, напиши мне /new").await?;
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            bot.send_message(msg.chat.id, "Просто отлично!\nНастройка Notion завершена!").await?;
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            bot.send_message(msg.chat.id, "Теперь когда будешь готов поговорить про твой день, напиши мне /new").await?;
             dialogue.update(State::Waiting).await?;
         }
         _ => {
             tokio::time::sleep(Duration::from_millis(200)).await;
             bot.send_message(msg.chat.id, "Отправь пж ссылОчку -_-").await?;
-            dialogue.update(State::ReceiveNotionInfo).await?;
+            dialogue.update(State::GetDBID).await?;
         }
     }
     Ok(())

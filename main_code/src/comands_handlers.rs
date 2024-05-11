@@ -44,8 +44,14 @@ pub async fn sleep_handler(bot: Bot, dialogue: MyDialogue) -> HandlerResult {
     Ok(())
 }
 
-pub async fn change_db_id(msg: Message, bot: Bot, dialogue: MyDialogue) -> HandlerResult {
-    bot.send_message(msg.chat.id, "Введите свою ссылку на базу данных").await?;
-    dialogue.update(State::ReceiveNotionInfo).await?;
+pub async fn notion_command(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    bot.send_message(msg.chat.id, "Отлично, давай добавим интеграцию с Notion!").await?;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    let ask_to_url = "Мне от тебя нужен токен, который ты получишь по ссылке: [*тык*](https://api.notion.com/v1/oauth/authorize?client_id=b8bc455c-98f6-46e2-bb90-8ea7a4c7ab23&response_type=code&owner=user&redirect_uri=https%3A%2F%2Fhttp%2F%2Fjirezectij.ru%2F)";
+    bot.send_message(msg.chat.id, ask_to_url)
+        .parse_mode(ParseMode::MarkdownV2)
+        .await?;
+    dialogue.update(State::GetNotionCode).await?;
     Ok(())
 }

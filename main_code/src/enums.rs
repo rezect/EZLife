@@ -16,8 +16,8 @@ pub enum Command {
     DeleteAllData,
     #[command(description = "Bot go to sleep")]
     Sleep,
-    #[command(description = "Change your DB id")]
-    ChangeDBId,
+    #[command(description = "Make Notion integration")]
+    Notion,
 }
 
 #[derive(Clone, Default)]
@@ -25,7 +25,8 @@ pub enum State {
     #[default]
     Start,
     ReceiveToNotion,
-    ReceiveNotionInfo,
+    GetNotionCode,
+    GetDBID,
     ReceiveEnergy,
     ReceiveEmotions {
         energy: String,

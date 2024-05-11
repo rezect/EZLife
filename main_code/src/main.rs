@@ -96,7 +96,7 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![Command::SendUserData].endpoint(send_user_data))
         .branch(case![Command::DeleteAllData].endpoint(delete_all_data))
         .branch(case![Command::Sleep].endpoint(sleep_handler))
-        .branch(case![Command::ChangeDBId].endpoint(change_db_id));
+        .branch(case![Command::Notion].endpoint(notion_command));
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
@@ -109,7 +109,8 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![State::DeleteAllUserData].endpoint(delete_handler))
         .branch(case![State::Waiting].endpoint(waiting_handler))
         .branch(case![State::ReceiveToNotion].endpoint(receive_to_notion))
-        .branch(case![State::ReceiveNotionInfo].endpoint(receive_notion_info));
+        .branch(case![State::GetNotionCode].endpoint(write_down_notion_token))
+        .branch(case![State::GetDBID].endpoint(get_db_id));
         
     dialogue::enter::<Update, InMemStorage<State>, State, _>()
         .branch(message_handler)

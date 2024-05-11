@@ -3,12 +3,18 @@ use crate::*;
 
 pub async fn notion_shema_new_page(
     (energy, emotions, reflection, rate, cur_date): (String, String, String, u32, String),
-    (day, month_name, database_id): (u32, &str, String)
+    (day, month_name, chat_id): (u32, &str, String)
 
 ) -> Response {
-    dotenv().ok();
-    let notion_token = env::var("MY_NOTION_TOKEN").expect("MY_NOTION_TOKEN must be set in .env");
+    let mut data_file = File::open(format!("user_db_ids/{}", chat_id)).expect("File not found 1");
+    let mut database_id = String::new();
+    data_file.read_to_string(&mut database_id).expect("File reading failed");
+    database_id.pop();
 
+    data_file = File::open(format!("user_tokens/{}", chat_id)).expect("File not found 2");
+    let mut notion_token = String::new();
+    data_file.read_to_string(&mut notion_token).expect("File reading failed");
+    notion_token.pop();
 
     let url = "https://api.notion.com/v1/pages";
     let client = Client::new();
@@ -116,4 +122,38 @@ pub async fn notion_shema_new_page(
     .body(request_body.to_string())
     .send()
     .await.expect("Failed to send request");
+}
+
+pub async fn get_notion_token_from_code(
+    code: String,
+) -> String {
+    dotenv().ok();
+    let noton_basic_token = env::var("NOTION_BASE64_BASIC").expect("NOTION_BASE64_BASIC must be set in .env");
+    let noton_redirect_url = env::var("NOTION_REDIRECT_URL").expect("NOTION_REDIRECT_URL must be set in .env");
+
+
+    let url = "https://api.notion.com/v1/oauth/token";
+    let client = Client::new();
+    let mut headers = header::HeaderMap::new();
+    headers.insert("Authorization", header::HeaderValue::from_str(format!("Basic {}", noton_basic_token).as_str()).expect("Invalid Notion tokens"));
+    headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
+
+    let request_body = json!({"grant_type":"authorization_code","code":code, "redirect_uri":noton_redirect_url});
+
+    let response = client
+        .post(url.to_string())
+        .headers(headers)
+        .body(request_body.to_string())
+        .send()
+        .await;
+
+    let s = match response {
+        Ok(response) => response.text().await.unwrap(),
+        Err(_) => panic!("Error!"),
+    };
+    let json_data: serde_json::Value = serde_json::from_str(&s)
+        .expect("Can't parse json");
+    println!("{}", s);
+
+    return json_data["access_token"].to_string();
 }
