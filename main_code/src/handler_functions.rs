@@ -21,12 +21,16 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
 }
 
 pub async fn receive_to_notion(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+    dotenv().ok();
+    let notion_acess_url = env::var("NOTION_ACESS_URL").expect("NOTION_ACESS_URL must be set in .env");
+
+
     match msg.text().unwrap_or("None").to_lowercase().as_str() {
         "да" => {
             tokio::time::sleep(Duration::from_millis(200)).await;
             bot.send_message(msg.chat.id, "Отлично, давай начнем!").await?;
             tokio::time::sleep(Duration::from_millis(200)).await;
-            let ask_to_url = "Мне от тебя нужен токен, который ты получишь по ссылке: [*тык*](https://api.notion.com/v1/oauth/authorize?client_id=b8bc455c-98f6-46e2-bb90-8ea7a4c7ab23&response_type=code&owner=user&redirect_uri=https%3A%2F%2Fhttp%2F%2Fjirezectij.ru%2F)";
+            let ask_to_url = format!("Мне от тебя нужен токен, который ты получишь по ссылке: [*тык*]({})", notion_acess_url);
             bot.send_message(msg.chat.id, ask_to_url)
                 .parse_mode(ParseMode::MarkdownV2)
                 .await?;
