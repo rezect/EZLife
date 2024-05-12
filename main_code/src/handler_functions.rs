@@ -1,3 +1,5 @@
+use teloxide::payloads::SendMessageSetters;
+
 use crate::*;
 
 
@@ -70,6 +72,10 @@ pub async fn write_down_notion_token(bot: Bot, dialogue: MyDialogue, msg: Messag
         bot.send_message(msg.chat.id, "Все верной!\nЯ записал ваш токен.").await?;
         tokio::time::sleep(Duration::from_millis(200)).await;
         bot.send_message(msg.chat.id, "Теперь пришлите мне ссылку на базу данных, где вы планируете хранить ваши дни.").await?;
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        bot.send_message(msg.chat.id, "Как создать базу данных Notion \\- посмотрите [*тут*](https://www.notion.so/help/create-a-database)\\.")
+            .parse_mode(ParseMode::MarkdownV2)
+            .await?;
         dialogue.update(State::GetDBID).await?;
     }
     Ok(())
@@ -79,17 +85,36 @@ pub async fn get_db_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerR
     match msg.text() {
         Some(url) => {
             let chat_id: String = msg.chat.id.to_string();
-            let db_token = &url[22..(22 + 32)];
+            let db_token: &str;
+            if url.chars().count() > 55 {
+                db_token = &url[22..(22 + 32)];
+            } else {
+                db_token = "Invalid link";
+            }
             let path_str = format!("user_db_ids/{}", chat_id);
             let path = Path::new(&path_str);
-            let mut file = File::create(&path)?;
-            writeln!(file, "{}", db_token)?;
-            log::info!("Success to save notion token to file");
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Просто отлично!\nНастройка Notion завершена!").await?;
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Теперь когда будешь готов поговорить про твой день, напиши мне /new").await?;
-            dialogue.update(State::Waiting).await?;
+            let response_is_success = notion_db_test(msg.chat.id.to_string(), db_token).await;
+            if response_is_success {
+                let mut file = File::create(&path)?;
+                writeln!(file, "{}", db_token)?;
+                log::info!("Success to save notion token to file");
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                bot.send_message(msg.chat.id, "Просто отлично!\nНастройка Notion завершена!").await?;
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                bot.send_message(msg.chat.id, "Теперь когда будешь готов поговорить про твой день, напиши мне /new").await?;
+                dialogue.update(State::Waiting).await?;
+            } else {
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                bot.send_message(msg.chat.id, "Неправильная ссылка на базу данных, попробуй еще раз. :(").await?;
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                let mut photo = PathBuf::new();
+                photo.push("images/guide_db_link.png");
+                bot.send_photo(msg.chat.id, InputFile::file(photo)).await?;
+                bot.send_message(msg.chat.id, "Перейдите на страницу своей базы данных и нажмите на три точки справа сверху.\nДалее скопируйте ссылку (Copy link) и отправьте ее мне.").await?;
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                bot.send_message(msg.chat.id, "Если не получается - напишите моему хозяину: @rezect 🧑‍💻").await?;
+                dialogue.update(State::GetDBID).await?;
+            }
         }
         _ => {
             tokio::time::sleep(Duration::from_millis(200)).await;
@@ -209,8 +234,12 @@ pub async fn is_all_ok(
             let date_time_string = Local::now().format("%d-%m-%Y %H:%M:%S").to_string();
             sleep(Duration::from_millis(200)).await;
             bot.send_message(msg.chat.id, "Хорошо, записал!\nДо встречи завтра ;)").await?;
-            // Создаем страницу в Notion (пока только для меня)
-            if msg.chat.id == ChatId(821961326) {
+
+            let path1_str = format!("user_tokens/{}", msg.chat.id.to_string());
+            let path2_str = format!("user_db_ids/{}", msg.chat.id.to_string());
+            let path1 = Path::new(&path1_str);
+            let path2 = Path::new(&path2_str);
+            if path1.exists() && path2.exists() {
                 match add_new_to_notion((energy.clone(), emotions.clone(), reflection.clone(), rate.clone(), date_time_string.clone(), msg.chat.id.to_string())).await {
                     Ok(_) => {
                         log::info!("Added to notion succsessfully");

@@ -12,10 +12,13 @@ mod shemas {
 use std::{
     env,
     fs::File,
-    path::Path,
+    path::{
+        Path,
+        PathBuf
+    },
     io::Read,
     io::Write,
-    time::Duration
+    time::Duration,
 };
 use teloxide::{
     dispatching::{
@@ -41,11 +44,11 @@ use chrono::{
     Datelike,
     Local,
 };
-use tokio::time::sleep;
 use shemas::{
     notion_shemas::*,
     ya_gpt_shemas::*,
 };
+use tokio::time::sleep;
 use serde_json::json;
 use comands_handlers::*;
 use handler_functions::*;
@@ -68,7 +71,7 @@ async fn main() {
 
     let bot = Bot::from_env();
     let my_id = ChatId(821961326);
-    match bot.send_message(my_id, "I started...")
+    match bot.send_message(my_id, "I ||started||\\.\\.\\.")
     .parse_mode(ParseMode::MarkdownV2)
     .await {
         Ok(_) => {

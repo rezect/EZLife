@@ -157,3 +157,111 @@ pub async fn get_notion_token_from_code(
 
     return json_data["access_token"].to_string();
 }
+
+pub async fn notion_db_test(
+    chat_id: String,
+    database_id: &str
+) -> bool {
+    let mut data_file = File::open(format!("user_tokens/{}", chat_id)).expect("File not found 2");
+    let mut notion_token = String::new();
+    data_file.read_to_string(&mut notion_token).expect("File reading failed");
+    notion_token.pop();
+
+    let url = "https://api.notion.com/v1/pages";
+    let client = Client::new();
+    let mut headers = header::HeaderMap::new();
+    headers.insert("Authorization", header::HeaderValue::from_str(&format!("Bearer {}", notion_token)).expect("Invalid Notion token"));
+    headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
+    headers.insert("Notion-Version", header::HeaderValue::from_static("2022-06-28"));
+
+    let request_body = json!({
+        "parent": { "database_id": database_id },
+        "icon": {
+            "emoji": "🌇"
+        },
+        "properties": {
+            "Name": {
+                "title": [
+                    {
+                        "text": {
+                            "content": "TEST PAGE"
+                        }
+                    }
+                ]
+            }
+        },
+        "children": [
+            {
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                            "content": "🎆Emotions:"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": "TEST"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                            "content": "🧠Reflection:"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": "TEST"
+                            }
+                        }
+                    ]
+                }
+            },
+        ],
+    });
+
+    let response = client
+    .post(url.to_string())
+    .headers(headers)
+    .body(request_body.to_string())
+    .send()
+    .await.expect("Failed to send request");
+
+
+    if response.status().is_success() {
+        return true
+    } else {
+        println!("{}", response.text().await.unwrap());
+        return false
+    }
+}
