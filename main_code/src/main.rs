@@ -77,6 +77,11 @@ async fn main() {
     .parse_mode(ParseMode::MarkdownV2)
     .await.unwrap();
 
+    if !Path::new("db.sqlite").exists() {
+        log::error!("Database file '{}' not found.", "db.sqlite");
+        return;
+    }
+
     let storage: MyStorage = if std::env::var("DB_REMEMBER_REDIS").is_ok() {
         RedisStorage::open("redis://127.0.0.1:6379", Bincode).await.unwrap().erase()
     } else {
