@@ -20,7 +20,7 @@ pub enum Command {
     Notion,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
 pub enum State {
     #[default]
     Start,

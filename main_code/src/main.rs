@@ -24,7 +24,8 @@ use teloxide::{
     dispatching::{
         dialogue::{
             self,
-            InMemStorage
+            serializer::{Bincode, Json},
+            ErasedStorage, RedisStorage, SqliteStorage, Storage,
         },
         UpdateHandler,
     },
@@ -59,7 +60,8 @@ use dotenvy::dotenv;
 use notion_apis::*;
 
 
-type MyDialogue = Dialogue<State, InMemStorage<State>>;
+type MyDialogue = Dialogue<State, ErasedStorage<State>>;
+type MyStorage = std::sync::Arc<ErasedStorage<State>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
 
@@ -71,18 +73,26 @@ async fn main() {
 
     let bot = Bot::from_env();
     let my_id = ChatId(821961326);
-    match bot.send_message(my_id, "I ||started||\\.\\.\\.")
+    bot.send_message(my_id, "I ||started||\\.\\.\\.")
     .parse_mode(ParseMode::MarkdownV2)
-    .await {
-        Ok(_) => {
-            log::info!("Success to send message 'I`ve been started...'");
-        }
-        Err(err) => {
-            log::error!("Error to send message 'I`ve been started...': {}", err);
-        }
+    .await.unwrap();
+
+    let db_file = "db.sqlite";
+
+    if !Path::new(db_file).exists() {
+        // handle file not found error
+        log::error!("Database file '{}' not found.", db_file);
+        return;
     }
+
+    let storage: MyStorage = if std::env::var("DB_REMEMBER_REDIS").is_ok() {
+        RedisStorage::open("redis://127.0.0.1:6379", Bincode).await.unwrap().erase()
+    } else {
+        SqliteStorage::open("db.sqlite", Json).await.unwrap().erase()
+    };
+
     Dispatcher::builder(bot, shema())
-    .dependencies(dptree::deps![InMemStorage::<State>::new()])
+    .dependencies(dptree::deps![storage])
     .enable_ctrlc_handler()
     .build()
     .dispatch()
@@ -115,7 +125,7 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![State::GetNotionCode].endpoint(write_down_notion_token))
         .branch(case![State::GetDBID].endpoint(get_db_id));
         
-    dialogue::enter::<Update, InMemStorage<State>, State, _>()
+    dialogue::enter::<Update, ErasedStorage<State>, State, _>()
         .branch(message_handler)
     
 }
