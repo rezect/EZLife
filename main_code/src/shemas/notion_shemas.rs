@@ -184,11 +184,28 @@ pub async fn notion_db_test(
                 "title": [
                     {
                         "text": {
-                            "content": "TEST PAGE"
+                            "content": "TEST"
                         }
                     }
                 ]
-            }
+            },
+            "Date": {
+                "rich_text": [
+                    {
+                        "text": {
+                            "content": "Test_DATE"
+                        }
+                    }
+                ]
+            },
+            "Energy": {
+                "select": {
+                    "name": "Средняя энергия"
+                }
+            },
+            "Rate": {
+                "number": 0
+            },
         },
         "children": [
             {
@@ -264,4 +281,73 @@ pub async fn notion_db_test(
         println!("{}", response.text().await.unwrap());
         return false
     }
+}
+
+pub async fn notion_edit_db(
+    chat_id: String,
+    db_id: &str
+) -> HandlerResult {
+    let mut data_file = File::open(format!("user_tokens/{}", chat_id)).expect("File not found");
+    let mut notion_token = String::new();
+    data_file.read_to_string(&mut notion_token).expect("File reading failed");
+    notion_token.pop();
+
+    let url = format!("https://api.notion.com/v1/databases/{db_id}");
+    let client = Client::new();
+    let mut headers = header::HeaderMap::new();
+    headers.insert("Authorization", header::HeaderValue::from_str(&format!("Bearer {}", notion_token)).expect("Invalid Notion token"));
+    headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
+    headers.insert("Notion-Version", header::HeaderValue::from_static("2022-06-28"));
+
+    let request_body = json!({
+        "properties": {
+            "Date": {
+                "id": "NZZ%3B",
+                "name": "Date",
+                "type": "rich_text",
+                "rich_text": {}
+            },
+            "Energy": {
+                "id": "%40Q%5BM",
+                "name": "Energy",
+                "type": "select",
+                "select": {
+                  "options": [
+                    {
+                      "id": "e28f74fc-83a7-4469-8435-27eb18f9f9de",
+                      "name": "Низкая энергия",
+                      "color": "red"
+                    },
+                    {
+                      "id": "6132d771-b283-4cd9-ba44-b1ed30477c7f",
+                      "name": "Средняя энергия",
+                      "color": "yellow"
+                    },
+                    {
+                      "id": "fc9ea861-820b-4f2b-bc32-44ed9eca873c",
+                      "name": "Высокая энергия",
+                      "color": "green"
+                    }
+                  ]
+                }
+            },
+            "Rate": {
+                "id": "%7B%5D_P",
+                "name": "Rate",
+                "type": "number",
+                "number": {
+                  "format": "number"
+                }
+            }
+        }
+    });
+
+    client
+    .patch(url.to_string())
+    .headers(headers)
+    .body(request_body.to_string())
+    .send()
+    .await.expect("Failed to send request");
+
+    Ok(())
 }

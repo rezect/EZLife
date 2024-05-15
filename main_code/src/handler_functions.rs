@@ -7,7 +7,7 @@ use crate::*;
 pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
 
     tokio::time::sleep(Duration::from_millis(300)).await;
-    bot.send_message(msg.chat.id, "Добро пожаловать, путник! Я бот, который будет выслушивать все твои жалобы и радости ;)").await?;
+    bot.send_message(msg.chat.id, "Добро пожаловать, путник!🎒\nЯ бот, который будет выслушивать все твои жалобы и радости ;)").await?;
     tokio::time::sleep(Duration::from_millis(200)).await;
     bot.send_message(msg.chat.id, "Давай начнем с настройки Notion для более удобного хранения твоих записей?").await?;
     let chat_id = msg.chat.id.to_string();
@@ -86,13 +86,15 @@ pub async fn get_db_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerR
         Some(url) => {
             let chat_id: String = msg.chat.id.to_string();
             let db_token: &str;
-            if url.chars().count() >= 55 {
+            if url.chars().count() >= 54 {
                 db_token = &url[22..(22 + 32)];
             } else {
                 db_token = "Invalid link";
             }
             let path_str = format!("user_db_ids/{}", chat_id);
             let path = Path::new(&path_str);
+            notion_edit_db(msg.chat.id.to_string(), db_token).await?;
+            sleep(Duration::from_millis(50)).await;
             let response_is_success = notion_db_test(msg.chat.id.to_string(), db_token).await;
             if response_is_success {
                 let mut file = File::create(&path)?;
@@ -100,6 +102,8 @@ pub async fn get_db_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerR
                 log::info!("Success to save notion token to file");
                 tokio::time::sleep(Duration::from_millis(200)).await;
                 bot.send_message(msg.chat.id, "Просто отлично!\nНастройка Notion завершена!").await?;
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                bot.send_message(msg.chat.id, "В вашей базе данных была создана 'тестовая' страница.").await?;
                 tokio::time::sleep(Duration::from_millis(200)).await;
                 bot.send_message(msg.chat.id, "Теперь когда будешь готов поговорить про твой день, напиши мне /new").await?;
                 dialogue.update(State::Waiting).await?;
@@ -240,7 +244,7 @@ pub async fn is_all_ok(
             let path1 = Path::new(&path1_str);
             let path2 = Path::new(&path2_str);
             if path1.exists() && path2.exists() {
-                match add_new_to_notion((energy.clone(), emotions.clone(), reflection.clone(), rate.clone(), date_time_string.clone(), msg.chat.id.to_string())).await {
+                match add_new_to_notion((energy.clone(), emotions.clone(), reflection.clone(), rate.clone(), date_time_string.clone(), msg.chat.id.to_string(), bot.clone())).await {
                     Ok(_) => {
                         log::info!("Added to notion succsessfully");
                     }
