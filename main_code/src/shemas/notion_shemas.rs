@@ -6,12 +6,12 @@ pub async fn notion_shema_new_page(
     (day, month_name, chat_id): (u32, &str, String)
 
 ) -> Response {
-    let mut data_file = File::open(format!("user_db_ids/{}", chat_id)).expect("File not found 1");
+    let mut data_file = File::open(format!("user_db_ids/{}", chat_id)).expect("File not found");
     let mut database_id = String::new();
     data_file.read_to_string(&mut database_id).expect("File reading failed");
     database_id.pop();
 
-    data_file = File::open(format!("user_tokens/{}", chat_id)).expect("File not found 2");
+    data_file = File::open(format!("user_tokens/{}", chat_id)).expect("File not found");
     let mut notion_token = String::new();
     data_file.read_to_string(&mut notion_token).expect("File reading failed");
     notion_token.pop();

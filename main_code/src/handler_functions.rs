@@ -69,7 +69,7 @@ pub async fn write_down_notion_token(bot: Bot, dialogue: MyDialogue, msg: Messag
         let mut file = File::create(&path)?;
         writeln!(file, "{}", user_notion_token)?;
         tokio::time::sleep(Duration::from_millis(200)).await;
-        bot.send_message(msg.chat.id, "Все верной!\nЯ записал ваш токен.").await?;
+        bot.send_message(msg.chat.id, "Все верно!\nЯ записал ваш токен.").await?;
         tokio::time::sleep(Duration::from_millis(200)).await;
         bot.send_message(msg.chat.id, "Теперь пришлите мне ссылку на базу данных, где вы планируете хранить ваши дни.").await?;
         tokio::time::sleep(Duration::from_millis(200)).await;
@@ -86,7 +86,7 @@ pub async fn get_db_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerR
         Some(url) => {
             let chat_id: String = msg.chat.id.to_string();
             let db_token: &str;
-            if url.chars().count() > 55 {
+            if url.chars().count() >= 55 {
                 db_token = &url[22..(22 + 32)];
             } else {
                 db_token = "Invalid link";
@@ -262,7 +262,17 @@ pub async fn is_all_ok(
             writeln!(file, "")?;
             sleep(Duration::from_millis(300)).await;
             bot.send_message(msg.chat.id, "Соединяю с инопланетянами 👽 для анализа вашего дня...").await?;
-            let smart_total = smart_total_result((energy, emotions, reflection)).await;
+            let mut smart_total = smart_total_result((energy.clone(), emotions.clone(), reflection.clone())).await;
+            if smart_total == "ul" {
+                bot.send_message(msg.chat.id, "Сейчас я немного занят🤯, попытаюсь еще раз через 3 секунды").await?;
+                sleep(Duration::from_secs(3)).await;
+                smart_total = smart_total_result((energy.clone(), emotions.clone(), reflection.clone())).await;
+            }
+            while smart_total == "ul" {
+                bot.send_message(msg.chat.id, "Иииии еще раз😓...").await?;
+                sleep(Duration::from_secs(3)).await;
+                smart_total = smart_total_result((energy.clone(), emotions.clone(), reflection.clone())).await;
+            }
             sleep(Duration::from_millis(200)).await;
             bot.send_message(msg.chat.id, smart_total)
                 .parse_mode(ParseMode::MarkdownV2)
@@ -323,8 +333,18 @@ pub async fn waiting_handler(
     match msg.text() {
         Some(text) => {
             sleep(Duration::from_millis(300)).await;
-            bot.send_message(msg.chat.id, "Передаю инопланетянам 👽 ваш запрос...").await?;
-            let smart_answer = smart_waiting_bot(text).await;
+            bot.send_message(msg.chat.id, "Передаю ваш запрос инопланетянам 👽...").await?;
+            let mut smart_answer = smart_waiting_bot(text).await;
+            if smart_answer == "ul" {
+                bot.send_message(msg.chat.id, "Сейчас я немного занят🤯, попытаюсь еще раз через 3 секунды").await?;
+                sleep(Duration::from_secs(3)).await;
+                smart_answer = smart_waiting_bot(text).await;
+            }
+            while smart_answer == "ul" {
+                bot.send_message(msg.chat.id, "Иииии еще раз😓...").await?;
+                sleep(Duration::from_secs(3)).await;
+                smart_answer = smart_waiting_bot(text).await;
+            }
             bot.send_message(msg.chat.id, smart_answer)
                 .parse_mode(ParseMode::MarkdownV2)
                 .await?;
