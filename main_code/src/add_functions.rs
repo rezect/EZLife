@@ -1,6 +1,7 @@
+use crate::*;
+
+
 pub fn add_str_to_file(path: String, data: String, name_of_string: String) -> std::io::Result<()> {
-    use std::fs::OpenOptions;
-    use std::io::Write;
 
     let mut file = OpenOptions::new()
         .write(true)
@@ -21,4 +22,18 @@ pub fn format_str(cur_str: &str) -> String {
     .replace(r"\*", "*")
     .replace(r"\_", "_")
     .replace(r"\_\_", "__");
+}
+
+pub async fn check_or_create_file(path: &str) {
+    if !Path::new(path).exists() {
+        match OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(path) {
+            Ok(_) => log::trace!("File created successfully."),
+            Err(e) => log::error!("Failed to create file: {}", e),
+        }
+    } else {
+        log::trace!("File already exists.");
+    }
 }

@@ -24,8 +24,8 @@ use teloxide::{
     dispatching::{
         dialogue::{
             self,
-            serializer::{Bincode, Json},
-            ErasedStorage, RedisStorage, SqliteStorage, Storage,
+            serializer::Json,
+            ErasedStorage, SqliteStorage, Storage,
         },
         UpdateHandler,
     },
@@ -34,6 +34,7 @@ use teloxide::{
         ParseMode
     },
     prelude::*,
+    payloads::SendMessageSetters,
     utils::command::BotCommands,
 };
 use reqwest::{
@@ -74,19 +75,12 @@ async fn main() {
     let bot = Bot::from_env();
     let my_id = ChatId(821961326);
     bot.send_message(my_id, "I ||started||\\.\\.\\.")
-    .parse_mode(ParseMode::MarkdownV2)
-    .await.unwrap();
+        .parse_mode(ParseMode::MarkdownV2)
+        .await.unwrap();
 
-    if !Path::new("db.sqlite").exists() {
-        log::error!("Database file '{}' not found.", "db.sqlite");
-        return;
-    }
+    check_or_create_file("db.sqlite").await;
 
-    let storage: MyStorage = if std::env::var("DB_REMEMBER_REDIS").is_ok() {
-        RedisStorage::open("redis://127.0.0.1:6379", Bincode).await.unwrap().erase()
-    } else {
-        SqliteStorage::open("db.sqlite", Json).await.unwrap().erase()
-    };
+    let storage: MyStorage = SqliteStorage::open("db.sqlite", Json).await.unwrap().erase();
 
     Dispatcher::builder(bot, shema())
     .dependencies(dptree::deps![storage])

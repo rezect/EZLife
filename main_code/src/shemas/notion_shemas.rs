@@ -351,3 +351,24 @@ pub async fn notion_edit_db(
 
     Ok(())
 }
+
+pub async fn notion_is_token_valid(
+    token_to_check: String
+) -> bool {
+    
+    let url = format!("https://api.notion.com/v1/users/me");
+    let client = Client::new();
+    let mut headers = header::HeaderMap::new();
+    headers.insert("Authorization", header::HeaderValue::from_str(&format!("Bearer {}", token_to_check)).expect("Invalid Notion token"));
+    headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
+    headers.insert("Notion-Version", header::HeaderValue::from_static("2022-06-28"));
+
+    let response = client
+        .get(url.to_string())
+        .headers(headers)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    return response.status().is_success();
+}
