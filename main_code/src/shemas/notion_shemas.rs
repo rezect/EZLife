@@ -16,12 +16,12 @@ pub async fn notion_shema_new_page(
     data_file.read_to_string(&mut notion_token).expect("File reading failed");
     notion_token.pop();
 
-    let cur_year = Utc::now().year();
-    let month_names = [
-        "янв.", "фев.", "марта", "апр.", "мая", "июня",
-        "июля", "авг.", "сент.", "окт.", "ноября", "дек."
+    let month_names_for_tags = [
+        "январь", "февраль", "март", "апрель", "май", "июнь",
+        "июль", "август", "сентябрь", "октяюрь", "ноябрь", "декабрь"
     ];
-    let cur_month = month_names[Utc::now().month0() as usize];
+    let cur_month_for_tags = month_names_for_tags[Utc::now().month0() as usize];
+    let cur_year = Utc::now().year();
 
     let url = "https://api.notion.com/v1/pages";
     let client = Client::new();
@@ -37,16 +37,19 @@ pub async fn notion_shema_new_page(
         },
         "properties": {
             "Tags": {
-                "multi-select": [
+                "multi_select": [
                     {
-                        "name": cur_year
+                        "name": cur_month_for_tags,
+                        "color": "yellow"
                     },
                     {
-                        "name": "day"
+                        "name": "note",
+                        "color": "gray"
                     },
                     {
-                        "name": cur_month
-                    }
+                        "name": cur_year.to_string(),
+                        "color": "blue"
+                    },
                 ]
             },
             "Name": {

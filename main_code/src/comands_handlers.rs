@@ -66,13 +66,13 @@ pub async fn note_command(bot: Bot, dialogue: MyDialogue) -> HandlerResult {
 }
 
 pub async fn note_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
-
     let path1_str = format!("user_tokens/{}", msg.chat.id.to_string());
     let path2_str = format!("user_db_ids/{}", msg.chat.id.to_string());
     let path1 = Path::new(&path1_str);
     let path2 = Path::new(&path2_str);
     if !path1.exists() || !path2.exists() {
         bot.send_message(msg.chat.id, "Эта функция пока доступна только с Notion.").await?;
+        dialogue.update(State::Waiting).await?;
         return Ok(());
     }
 
@@ -89,6 +89,5 @@ pub async fn note_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> Handl
             bot.send_message(dialogue.chat_id(), "Я не понял твой ответ. Отправь мне что-нибудь... текстовое").await?;
         }
     }
-
     Ok(())
 }
