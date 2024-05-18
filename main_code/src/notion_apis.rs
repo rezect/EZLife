@@ -7,7 +7,7 @@ pub async fn add_new_to_notion(
     // Получаем дату в формате "4 апр."
     let local_date = Local::now();
     let month_names = [
-        "янв.", "фев", "марта", "апр.", "мая", "июня",
+        "янв.", "фев.", "марта", "апр.", "мая", "июня",
         "июля", "авг.", "сент.", "окт.", "ноября", "дек."
     ];
     let month_number = local_date.month() as usize;

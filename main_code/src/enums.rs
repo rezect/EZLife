@@ -18,6 +18,8 @@ pub enum Command {
     Sleep,
     #[command(description = "Make Notion integration")]
     Notion,
+    #[command(description = "Make fast note")]
+    Note,
 }
 
 #[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
@@ -48,4 +50,5 @@ pub enum State {
     },
     Waiting,
     DeleteAllUserData,
+    NoteHandler,
 }

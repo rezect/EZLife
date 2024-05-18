@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Parameter</title>
+<style>
+#code {
+    font-size: 36px;
+    text-align: center;
+}
+</style>
+<meta name="lava-verify" content="10b761495a95bd09" />
+</head>
+<body>
+
+<p id="code"></p>
+<script>
+var currentUrl = window.location.href;
+
+var urlParams = new URLSearchParams(window.location.search);
+var code = urlParams.get('code');
+
+var codeElement = document.getElementById("code");
+codeElement.textContent = code;
+
+applyStyles();
+
+function applyStyles() {
+    codeElement.style.fontSize = "36px";
+    codeElement.style.textAlign = "center";
+}
+</script>
+
+</body>
+</html>

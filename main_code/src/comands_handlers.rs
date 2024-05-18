@@ -58,3 +58,37 @@ pub async fn notion_command(bot: Bot, msg: Message, dialogue: MyDialogue) -> Han
     dialogue.update(State::GetNotionCode).await?;
     Ok(())
 }
+
+pub async fn note_command(bot: Bot, dialogue: MyDialogue) -> HandlerResult {
+    bot.send_message(dialogue.chat_id(), "Расскажи что-нибудь интересное ;)").await?;
+    dialogue.update(State::NoteHandler).await?;
+    Ok(())
+}
+
+pub async fn note_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
+
+    let path1_str = format!("user_tokens/{}", msg.chat.id.to_string());
+    let path2_str = format!("user_db_ids/{}", msg.chat.id.to_string());
+    let path1 = Path::new(&path1_str);
+    let path2 = Path::new(&path2_str);
+    if !path1.exists() || !path2.exists() {
+        bot.send_message(msg.chat.id, "Эта функция пока доступна только с Notion.").await?;
+        return Ok(());
+    }
+
+    match msg.text() {
+        Some(note_info) => {
+            if notion_reflection_shema(note_info, msg.chat.id.to_string()).await.status().is_success() {
+                bot.send_message(msg.chat.id, "Отлично, записал!\nЕсли еще будет что рассказать - пиши (/note).").await?;
+                dialogue.update(State::Waiting).await?;
+            } else {
+                bot.send_message(msg.chat.id, "Не получилось записать в Notion :(\nПопробуй еще раз.").await?;
+            }
+        }
+        _ => {
+            bot.send_message(dialogue.chat_id(), "Я не понял твой ответ. Отправь мне что-нибудь... текстовое").await?;
+        }
+    }
+
+    Ok(())
+}

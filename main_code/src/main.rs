@@ -2,7 +2,6 @@ mod add_functions;
 mod enums;
 mod comands_handlers;
 mod handler_functions;
-mod yagpt_apis;
 mod notion_apis;
 mod shemas {
     pub mod notion_shemas;
@@ -45,6 +44,7 @@ use reqwest::{
 use chrono::{
     Datelike,
     Local,
+    Utc,
 };
 use shemas::{
     notion_shemas::*,
@@ -100,7 +100,8 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![Command::SendUserData].endpoint(send_user_data))
         .branch(case![Command::DeleteAllData].endpoint(delete_all_data))
         .branch(case![Command::Sleep].endpoint(sleep_handler))
-        .branch(case![Command::Notion].endpoint(notion_command));
+        .branch(case![Command::Notion].endpoint(notion_command))
+        .branch(case![Command::Note].endpoint(note_command));
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
@@ -114,7 +115,8 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![State::Waiting].endpoint(waiting_handler))
         .branch(case![State::ReceiveToNotion].endpoint(receive_to_notion))
         .branch(case![State::GetNotionCode].endpoint(write_down_notion_token))
-        .branch(case![State::GetDBID].endpoint(get_db_id));
+        .branch(case![State::GetDBID].endpoint(get_db_id))
+        .branch(case![State::NoteHandler].endpoint(note_handler));
         
     dialogue::enter::<Update, ErasedStorage<State>, State, _>()
         .branch(message_handler)

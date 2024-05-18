@@ -16,6 +16,13 @@ pub async fn notion_shema_new_page(
     data_file.read_to_string(&mut notion_token).expect("File reading failed");
     notion_token.pop();
 
+    let cur_year = Utc::now().year();
+    let month_names = [
+        "янв.", "фев.", "марта", "апр.", "мая", "июня",
+        "июля", "авг.", "сент.", "окт.", "ноября", "дек."
+    ];
+    let cur_month = month_names[Utc::now().month0() as usize];
+
     let url = "https://api.notion.com/v1/pages";
     let client = Client::new();
     let mut headers = header::HeaderMap::new();
@@ -29,6 +36,19 @@ pub async fn notion_shema_new_page(
             "emoji": "🌇"
         },
         "properties": {
+            "Tags": {
+                "multi-select": [
+                    {
+                        "name": cur_year
+                    },
+                    {
+                        "name": "day"
+                    },
+                    {
+                        "name": cur_month
+                    }
+                ]
+            },
             "Name": {
                 "title": [
                     {
@@ -301,6 +321,12 @@ pub async fn notion_edit_db(
 
     let request_body = json!({
         "properties": {
+            "Tags": {
+                "id": "flsb",
+                "name": "Tags",
+                "type": "multi_select",
+                "multi_select": {}
+            },
             "Date": {
                 "id": "NZZ%3B",
                 "name": "Date",
@@ -371,4 +397,120 @@ pub async fn notion_is_token_valid(
         .expect("Failed to send request");
 
     return response.status().is_success();
+}
+
+pub async fn notion_reflection_shema(
+    note_info: &str,
+    chat_id: String,
+) -> Response {
+
+    let mut data_file = File::open(format!("user_db_ids/{}", chat_id)).expect("File not found");
+    let mut database_id = String::new();
+    data_file.read_to_string(&mut database_id).expect("File reading failed");
+    database_id.pop();
+
+    data_file = File::open(format!("user_tokens/{}", chat_id)).expect("File not found");
+    let mut notion_token = String::new();
+    data_file.read_to_string(&mut notion_token).expect("File reading failed");
+    notion_token.pop();
+
+    let cur_year = Utc::now().year();
+    let cur_time = Local::now().format("%H:%M").to_string();
+    let month_names = [
+        "января", "февраля", "марта", "апреля", "мая", "июня",
+        "июля", "августа", "сентября", "октяюря", "ноября", "декабря"
+    ];
+    let month_names_for_tags = [
+        "январь", "февраль", "март", "апрель", "май", "июнь",
+        "июль", "август", "сентябрь", "октяюрь", "ноябрь", "декабрь"
+    ];
+    let cur_month = month_names[Utc::now().month0() as usize];
+    let cur_month_for_tags = month_names_for_tags[Utc::now().month0() as usize];
+
+    let url = "https://api.notion.com/v1/pages";
+    let client = Client::new();
+    let mut headers = header::HeaderMap::new();
+    headers.insert("Authorization", header::HeaderValue::from_str(&format!("Bearer {}", notion_token)).expect("Invalid Notion token"));
+    headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
+    headers.insert("Notion-Version", header::HeaderValue::from_static("2022-06-28"));
+
+    let request_body = json!({
+        "parent": { "database_id": database_id },
+        "icon": {
+            "emoji": "🌇"
+        },
+        "properties": {
+            "Tags": {
+                "multi_select": [
+                    {
+                        "name": cur_month_for_tags,
+                        "color": "yellow"
+                    },
+                    {
+                        "name": "note",
+                        "color": "gray"
+                    },
+                    {
+                        "name": cur_year.to_string(),
+                        "color": "blue"
+                    },
+                ]
+            },
+            "Name": {
+                "title": [
+                    {
+                        "text": {
+                            "content": Local::now().day().to_string() + " " + cur_month
+                        }
+                    }
+                ]
+            },
+            "Date": {
+                "rich_text": [
+                    {
+                        "text": {
+                            "content": Local::now().format("%d.%m.%Y %H:%M:%S").to_string()
+                        }
+                    }
+                ]
+            },
+        },
+        "children": [
+            {
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                            "content": format!("Заметка в {cur_time}")
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": note_info
+                            }
+                        }
+                    ]
+                }
+            },
+        ],
+    });
+
+    return client
+    .post(url.to_string())
+    .headers(headers.clone())
+    .body(request_body.to_string())
+    .send()
+    .await.expect("Failed to send request");
 }
