@@ -22,19 +22,15 @@ use std::{
     time::Duration,
 };
 use teloxide::{
-    prelude::*,
     dispatching::{
         dialogue::{
             self,
             serializer::Json,
             ErasedStorage, SqliteStorage, Storage,
         }, UpdateFilterExt, UpdateHandler
-    },
-    payloads::SendMessageSetters,
-    types::{
+    }, dptree::endpoint, payloads::SendMessageSetters, prelude::*, types::{
         InlineKeyboardButton, InlineKeyboardMarkup, InputFile, ParseMode
-    },
-    utils::command::BotCommands,
+    }, utils::command::BotCommands
 };
 use reqwest::{
     header,
@@ -115,7 +111,8 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![State::NoteHelper].endpoint(note_helper));
 
     let callback_handler = Update::filter_callback_query()
-        .branch(case![State::EnergyError].endpoint(callback_handler));
+        .branch(case![State::EnergyError].endpoint(callback_handler))
+        .branch(endpoint(callback_handler_not_correct_state));
 
     dialogue::enter::<Update, ErasedStorage<State>, State, _>()
         .branch(message_handler)

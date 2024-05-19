@@ -71,3 +71,24 @@ pub async fn make_keyboard_energy() -> InlineKeyboardMarkup {
 
     InlineKeyboardMarkup::new(keyboard)
 }
+
+pub async fn callback_handler_not_correct_state(bot: Bot, q: CallbackQuery) -> HandlerResult {
+    
+    tokio::time::sleep(Duration::from_millis(400)).await;
+    if let Some(energy) = q.data {
+    let text = format!("Твоя энергия: {energy}");
+
+    bot.answer_callback_query(q.id).await?;
+
+    if let Some(Message { id, chat, .. }) = q.message {
+        bot.edit_message_text(chat.id, id, text).await?;
+    } else if let Some(id) = q.inline_message_id {
+        bot.edit_message_text_inline(id, text).await?;
+    }
+    
+    log::info!("User energy: {}", energy);
+    
+}
+
+Ok(())
+}
