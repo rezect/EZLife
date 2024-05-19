@@ -11,6 +11,7 @@ mod shemas {
 use std::{
     env,
     fs::File,
+    fs::OpenOptions,
     path::{
         Path,
         PathBuf
@@ -56,7 +57,6 @@ use comands_handlers::*;
 use handler_functions::*;
 use add_functions::*;
 use enums::*;
-use std::fs::OpenOptions;
 use dotenvy::dotenv;
 use notion_apis::*;
 
@@ -94,31 +94,27 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
     use dptree::case;
 
     let command_handler = teloxide::filter_command::<Command, _>()
-        .branch(case![Command::Help].endpoint(help_handler))
-        .branch(case![Command::New].endpoint(restart_handler))
-        .branch(case![Command::Restart].endpoint(restart_handler))
-        .branch(case![Command::SendUserData].endpoint(send_user_data))
-        .branch(case![Command::DeleteAllData].endpoint(delete_all_data))
-        .branch(case![Command::Sleep].endpoint(sleep_handler))
+        .branch(case![Command::Help].endpoint(help_command))
+        .branch(case![Command::Day].endpoint(new_day_command))
+        .branch(case![Command::Sleep].endpoint(sleep_command))
         .branch(case![Command::Notion].endpoint(notion_command))
         .branch(case![Command::Note].endpoint(note_command));
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
-        .branch(case![State::Start].endpoint(start))
-        .branch(case![State::ReceiveEnergy].endpoint(receive_energy))
-        .branch(case![State::ReceiveEmotions { energy }].endpoint(receive_emotions))
-        .branch(case![State::ReceiveReflection { energy, emotions }].endpoint(receive_reflection))
-        .branch(case![State::ReceiveRate { energy, emotions, reflection }].endpoint(receive_rate))
-        .branch(case![State::IsAllOk { energy, emotions, reflection, rate }].endpoint(is_all_ok))
-        .branch(case![State::DeleteAllUserData].endpoint(delete_handler))
+        .branch(case![State::Start].endpoint(start_handler))
+        .branch(case![State::ReceiveToNotion].endpoint(receive_to_notion_handler))
+        .branch(case![State::GetNotionCode].endpoint(get_notion_code_handler))
+        .branch(case![State::GetDBID].endpoint(get_db_id_handler))
+        .branch(case![State::ReceiveEnergy].endpoint(receive_energy_handler))
+        .branch(case![State::ReceiveEmotions { energy }].endpoint(receive_emotions_handler))
+        .branch(case![State::ReceiveReflection { energy, emotions }].endpoint(receive_reflection_handler))
+        .branch(case![State::ReceiveRate { energy, emotions, reflection }].endpoint(receive_rate_handler))
+        .branch(case![State::IsAllOk { energy, emotions, reflection, rate }].endpoint(is_all_ok_handler))
         .branch(case![State::Waiting].endpoint(waiting_handler))
-        .branch(case![State::ReceiveToNotion].endpoint(receive_to_notion))
-        .branch(case![State::GetNotionCode].endpoint(write_down_notion_token))
-        .branch(case![State::GetDBID].endpoint(get_db_id))
-        .branch(case![State::NoteHandler].endpoint(note_handler));
-        
+        .branch(case![State::NoteHelper].endpoint(note_helper));
+
     dialogue::enter::<Update, ErasedStorage<State>, State, _>()
         .branch(message_handler)
-    
+
 }

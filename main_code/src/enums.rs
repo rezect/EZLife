@@ -4,22 +4,16 @@ use crate::BotCommands;
 #[derive(BotCommands, Clone)]
 #[command(rename_rule = "lowercase", description = "These commands are supported:")]
 pub enum Command {
-    #[command(description = "Display this text")]
+    #[command(description = "Display all commands")]
     Help,
-    #[command(description = "Restart the dialogue")]
-    Restart,
-    #[command(description = "Start new session")]
-    New,
-    #[command(description = "Get your data")]
-    SendUserData,
-    #[command(description = "Delete all your data")]
-    DeleteAllData,
-    #[command(description = "Bot go to sleep")]
-    Sleep,
-    #[command(description = "Make Notion integration")]
-    Notion,
+    #[command(description = "Record your impressions of the day")]
+    Day,
     #[command(description = "Make fast note")]
     Note,
+    #[command(description = "Change the Notion data")]
+    Notion,
+    #[command(description = "Bot go to sleep")]
+    Sleep,
 }
 
 #[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
@@ -49,6 +43,5 @@ pub enum State {
         rate: u32
     },
     Waiting,
-    DeleteAllUserData,
-    NoteHandler,
+    NoteHelper,
 }

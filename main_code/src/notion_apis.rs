@@ -17,7 +17,6 @@ pub async fn add_new_to_notion(
     let response = notion_shema_new_page((energy, emotions, reflection, rate, cur_date), (day, month_name, chat_id.clone())).await;
 
     if response.status().is_success() {
-        // Получаем тело ответа как строку
         let body = response.text().await?;
         log::info!("Ответ сервера: {}", body);
     } else {

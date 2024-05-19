@@ -2,31 +2,18 @@ use crate::*;
 
 
 // Функции-обработчики состояний
-pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+pub async fn start_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
 
     tokio::time::sleep(Duration::from_millis(300)).await;
     bot.send_message(msg.chat.id, "Добро пожаловать, путник!🎒\nЯ бот, который будет выслушивать все твои жалобы и радости ;)").await?;
     tokio::time::sleep(Duration::from_millis(200)).await;
     bot.send_message(msg.chat.id, "Давай начнем с настройки Notion для более удобного хранения твоих записей?").await?;
 
-    let chat_id = msg.chat.id.to_string();
-    let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
-    let path_str = format!("user_data/{}", chat_id);
-    let path = Path::new(&path_str);
-
-    if !path.exists() {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(&path)?;
-        writeln!(file, "Start documentation! Nickname - {}", user_name)?;
-    }
-
     dialogue.update(State::ReceiveToNotion).await?;
     Ok(())
 }
 
-pub async fn receive_to_notion(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+pub async fn receive_to_notion_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
 
     dotenv().ok();
     let notion_acess_url = env::var("NOTION_ACESS_URL").expect("NOTION_ACESS_URL must be set in .env");
@@ -44,16 +31,16 @@ pub async fn receive_to_notion(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
         }
         "нет" => {
             tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Тогда можешь позже попробовать, котик ;)").await?;
+            bot.send_message(msg.chat.id, "Тогда можешь позже попробовать, котик - /notion ;)\nНо большинство функций будет недоступно, потому что мы не храним данные локально :/").await?;
             tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Когда будешь готов поговорить про твой день, напиши мне /new").await?;
+            bot.send_message(msg.chat.id, "Когда будешь готов поговорить про твой день, напиши мне /day").await?;
             dialogue.update(State::Waiting).await?;
         }
         _ => {
             tokio::time::sleep(Duration::from_millis(200)).await;
             bot.send_message(msg.chat.id, "Ладно, если захочешь подключить Notion, напиши мне /notion").await?;
             tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "И когда будешь готов поговорить про твой день, напиши мне /new").await?;
+            bot.send_message(msg.chat.id, "А пока можешь задавать мне вопросы, я тебя выслушаю и помогу советом.").await?;
             dialogue.update(State::Waiting).await?;
         }
     }
@@ -61,12 +48,18 @@ pub async fn receive_to_notion(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
     Ok(())
 }
 
-pub async fn write_down_notion_token(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+pub async fn get_notion_code_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
 
     let user_notion_token: String = get_notion_token_from_code(msg.text().unwrap_or("Get Notion token error").to_string()).await.trim_matches('"').to_string();
-    // Добавить проверку токена на валидность
     if notion_is_token_valid(user_notion_token.clone()).await {
         let chat_id: String = msg.chat.id.to_string();
+
+        if !Path::new("user_tokens").exists() {
+            match std::fs::create_dir("user_tokens") {
+                Ok(_) => println!("Директория 'user_tokens' успешно создана."),
+                Err(e) => eprintln!("Ошибка при создании директории user_tokens: {}", e),
+            }
+        }
 
         let mut file = OpenOptions::new()
             .write(true)
@@ -92,7 +85,7 @@ pub async fn write_down_notion_token(bot: Bot, dialogue: MyDialogue, msg: Messag
     Ok(())
 }
 
-pub async fn get_db_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+pub async fn get_db_id_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
 
     match msg.text() {
         Some(url) => {
@@ -109,6 +102,14 @@ pub async fn get_db_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerR
             let response_is_success = notion_db_test(msg.chat.id.to_string(), db_token).await;
 
             if response_is_success {
+
+                if !Path::new("user_db_ids").exists() {
+                    match std::fs::create_dir("user_db_ids") {
+                        Ok(_) => println!("Директория 'user_db_ids' успешно создана."),
+                        Err(e) => eprintln!("Ошибка при создании директории user_db_ids: {}", e),
+                    }
+                }
+
                 let mut file = OpenOptions::new()
                     .write(true)
                     .append(false)
@@ -122,7 +123,7 @@ pub async fn get_db_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerR
                 tokio::time::sleep(Duration::from_millis(200)).await;
                 bot.send_message(msg.chat.id, "В вашей базе данных была создана 'тестовая' страница.").await?;
                 tokio::time::sleep(Duration::from_millis(200)).await;
-                bot.send_message(msg.chat.id, "Теперь когда будешь готов поговорить про твой день, напиши мне /new").await?;
+                bot.send_message(msg.chat.id, "Теперь когда будешь готов поговорить про твой день, напиши мне /day").await?;
                 dialogue.update(State::Waiting).await?;
             } else {
                 tokio::time::sleep(Duration::from_millis(200)).await;
@@ -146,7 +147,7 @@ pub async fn get_db_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerR
     Ok(())
 }
 
-pub async fn receive_energy(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+pub async fn receive_energy_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
 
     tokio::time::sleep(Duration::from_millis(200)).await;
     match msg.text().unwrap_or("None").to_lowercase().as_str() {
@@ -177,7 +178,7 @@ pub async fn receive_energy(bot: Bot, dialogue: MyDialogue, msg: Message) -> Han
     Ok(())
 }
 
-pub async fn receive_emotions(bot: Bot, dialogue: MyDialogue, energy: String, msg: Message) -> HandlerResult {
+pub async fn receive_emotions_handler(bot: Bot, dialogue: MyDialogue, energy: String, msg: Message) -> HandlerResult {
 
     tokio::time::sleep(Duration::from_millis(200)).await;
     match msg.text() {
@@ -194,7 +195,7 @@ pub async fn receive_emotions(bot: Bot, dialogue: MyDialogue, energy: String, ms
     Ok(())
 }
 
-pub async fn receive_reflection(
+pub async fn receive_reflection_handler(
     bot: Bot,
     dialogue: MyDialogue,
     (energy, emotions): (String, String),
@@ -214,7 +215,7 @@ pub async fn receive_reflection(
     Ok(())
 }
 
-pub async fn receive_rate(
+pub async fn receive_rate_handler(
     bot: Bot, dialogue: MyDialogue,
     (energy, emotions, reflection): (String, String, String),
     msg: Message
@@ -244,7 +245,7 @@ pub async fn receive_rate(
     Ok(())
 }
 
-pub async fn is_all_ok(
+pub async fn is_all_ok_handler(
     bot: Bot, dialogue: MyDialogue,
     (energy, emotions, reflection, rate): (String, String, String, u32),
     msg: Message
@@ -252,35 +253,18 @@ pub async fn is_all_ok(
 
     match msg.text().unwrap_or("None").to_lowercase().as_str() {
         "да" => {
-            let date_time_string = Local::now().format("%d-%m-%Y %H:%M:%S").to_string();
+            let date_time_string = Local::now().format("%d.%m.%Y %H:%M").to_string();
             sleep(Duration::from_millis(200)).await;
             bot.send_message(msg.chat.id, "Хорошо, записал!\nДо встречи завтра ;)").await?;
 
-            let path1_str = format!("user_tokens/{}", msg.chat.id.to_string());
-            let path2_str = format!("user_db_ids/{}", msg.chat.id.to_string());
-            let path1 = Path::new(&path1_str);
-            let path2 = Path::new(&path2_str);
-            if path1.exists() && path2.exists() {
-                match add_new_to_notion((energy.clone(), emotions.clone(), reflection.clone(), rate.clone(), date_time_string.clone(), msg.chat.id.to_string(), bot.clone())).await {
-                    Ok(_) => {
-                        log::info!("Added to notion succsessfully");
-                    }
-                    Err(_) => {
-                        log::warn!("Added to notion caused errors!");
-                    }
-                };
-            }
-            // Добавляем локально
-            add_str_to_file(String::from(format!("user_data/{}", msg.chat.id.to_string())), date_time_string, String::from("Date"))?;
-            add_str_to_file(String::from(format!("user_data/{}", msg.chat.id.to_string())), energy.clone(), String::from("Energy"))?;
-            add_str_to_file(String::from(format!("user_data/{}", msg.chat.id.to_string())), emotions.clone(), String::from("Emotions"))?;
-            add_str_to_file(String::from(format!("user_data/{}", msg.chat.id.to_string())), reflection.clone(), String::from("Reflection"))?;
-            let mut file = OpenOptions::new()
-                .write(true)
-                .append(true)
-                .create(true)
-                .open(format!("user_data/{}", msg.chat.id.to_string()))?;
-            writeln!(file, "")?;
+            match add_new_to_notion((energy.clone(), emotions.clone(), reflection.clone(), rate.clone(), date_time_string.clone(), msg.chat.id.to_string(), bot.clone())).await {
+                Ok(_) => {
+                    log::info!("Added to notion succsessfully");
+                }
+                Err(_) => {
+                    log::warn!("Added to notion caused errors!");
+                }
+            };
 
             sleep(Duration::from_millis(300)).await;
             bot.send_message(msg.chat.id, "Соединяю с инопланетянами 👽 для анализа вашего дня...").await?;
@@ -306,7 +290,7 @@ pub async fn is_all_ok(
         "нет" => {
             // В разработке
             sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Эта функция дорабатывается... Пока можете использовать /restart").await?;
+            bot.send_message(msg.chat.id, "Эта функция дорабатывается...\nПока можете использовать /day чтобы заново описать свой день").await?;
             dialogue.update(State::Waiting).await?;
         }
         _ => {
@@ -319,40 +303,6 @@ pub async fn is_all_ok(
     Ok(())
 }
 
-pub async fn delete_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
-
-    sleep(Duration::from_millis(200)).await;
-    match msg.text().unwrap_or("None").to_lowercase().as_str() {
-        "да" => {
-            let chat_id = msg.chat.id.to_string();
-            let user_name = msg.from().unwrap().username.to_owned().unwrap_or(String::from("NoName"));
-
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .open(format!("user_data/{}", chat_id))?;
-            writeln!(file, "Start documentation! Nickname - {}", user_name)?;
-
-            bot.send_message(dialogue.chat_id(), "Ваши данные успешно удалены!").await?;
-            dialogue.update(State::Waiting).await?;
-        }
-        "нет" => {
-            bot.send_message(dialogue.chat_id(), "Ваши данные успешно удалены!").await?;
-            sleep(Duration::from_secs(2)).await;
-            bot.send_message(dialogue.chat_id(), "Ладно, шучу").await?;
-            sleep(Duration::from_millis(200)).await;
-            bot.send_message(dialogue.chat_id(), "Ваши данные в сохранности").await?;
-            dialogue.update(State::Waiting).await?;
-        }
-        _ => {
-            bot.send_message(msg.chat.id, "Я не понял твой ответ. Отправь либо Да либо Нет.").await?;
-            dialogue.update(State::DeleteAllUserData).await?;
-        }
-    }
-    
-    Ok(())
-}
-
 pub async fn waiting_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> HandlerResult {
 
     match msg.text() {
@@ -362,8 +312,8 @@ pub async fn waiting_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> Ha
 
             let mut smart_answer = smart_waiting_bot(text).await;
             if smart_answer == "ul" {
-                bot.send_message(msg.chat.id, "Сейчас я немного занят🤯, попытаюсь еще раз через 3 секунды").await?;
-                sleep(Duration::from_secs(3)).await;
+                bot.send_message(msg.chat.id, "Сейчас я немного занят🤯, попытаюсь еще раз через 5 секунд").await?;
+                sleep(Duration::from_secs(5)).await;
                 smart_answer = smart_waiting_bot(text).await;
             }
             while smart_answer == "ul" {

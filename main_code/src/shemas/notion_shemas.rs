@@ -43,8 +43,8 @@ pub async fn notion_shema_new_page(
                         "color": "yellow"
                     },
                     {
-                        "name": "note",
-                        "color": "gray"
+                        "name": "day",
+                        "color": "green"
                     },
                     {
                         "name": cur_year.to_string(),

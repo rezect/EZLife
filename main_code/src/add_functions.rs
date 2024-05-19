@@ -1,18 +1,6 @@
 use crate::*;
 
 
-pub fn add_str_to_file(path: String, data: String, name_of_string: String) -> std::io::Result<()> {
-
-    let mut file = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .create(true)
-        .open(path)?;
-    writeln!(file, "{}: {}", name_of_string, data)?;
-
-    Ok(())
-}
-
 pub fn format_str(cur_str: &str) -> String {
     use teloxide::utils::markdown::escape;
     
@@ -36,4 +24,12 @@ pub async fn check_or_create_file(path: &str) {
     } else {
         log::trace!("File already exists.");
     }
+}
+
+pub async fn is_notion_integration_exist(chat_id: String) -> bool {
+    let path1_str = format!("user_tokens/{}", chat_id);
+    let path2_str = format!("user_db_ids/{}", chat_id);
+    let path1 = Path::new(&path1_str);
+    let path2 = Path::new(&path2_str);
+    return path1.exists() && path2.exists();
 }
