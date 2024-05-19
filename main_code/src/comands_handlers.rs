@@ -12,9 +12,9 @@ pub async fn new_day_command(bot: Bot, msg: Message, dialogue: MyDialogue) -> Ha
         dialogue.update(State::Waiting).await?;
         return Ok(());
     }
-    tokio::time::sleep(Duration::from_millis(200)).await;
-    bot.send_message(msg.chat.id, "Привееет, расскажи какая у тебя была сегодня энергия?").await?;
-    dialogue.update(State::ReceiveEnergy).await?;
+    let keyboard = make_keyboard_energy().await;
+    bot.send_message(msg.chat.id, "Какая у вас была сегодня энергия?").reply_markup(keyboard).await?;
+    dialogue.update(State::EnergyError).await?;
     Ok(())
 }
 
@@ -60,7 +60,7 @@ pub async fn note_helper(bot: Bot, msg: Message, dialogue: MyDialogue) -> Handle
     match msg.text() {
         Some(note_info) => {
             if notion_reflection_shema(note_info, msg.chat.id.to_string()).await.status().is_success() {
-                bot.send_message(msg.chat.id, "Отлично, записал!\nЕсли еще будет что рассказать - пиши (/note).").await?;
+                bot.send_message(msg.chat.id, "Отлично, записал!\nЕсли еще будет что рассказать - пиши /note.").await?;
             } else {
                 bot.send_message(msg.chat.id, "Не получилось записать в Notion :( Что-то пошло не так...").await?;
             }

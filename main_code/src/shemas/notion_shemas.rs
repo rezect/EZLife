@@ -472,7 +472,7 @@ pub async fn notion_reflection_shema(
                 "rich_text": [
                     {
                         "text": {
-                            "content": Local::now().format("%d.%m.%Y %H:%M:%S").to_string()
+                            "content": Local::now().format("%d.%m.%Y %H:%M").to_string()
                         }
                     }
                 ]

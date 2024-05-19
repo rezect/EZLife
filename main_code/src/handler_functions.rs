@@ -147,37 +147,6 @@ pub async fn get_db_id_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
     Ok(())
 }
 
-pub async fn receive_energy_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
-
-    tokio::time::sleep(Duration::from_millis(200)).await;
-    match msg.text().unwrap_or("None").to_lowercase().as_str() {
-        "низкая" => {
-            bot.send_message(msg.chat.id, "Ничего страшного, это нормально бро").await?;
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Теперь расскажи о своих чувствах за сегодня").await?;
-            dialogue.update(State::ReceiveEmotions { energy: String::from("Низкая энергия") }).await?;
-        }
-        "средняя" => {
-            bot.send_message(msg.chat.id, "Главное во всем держать золотую середину ;)").await?;
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Теперь расскажи о своих чувствах за сегодня").await?;
-            dialogue.update(State::ReceiveEmotions { energy: String::from("Средняя энергия") }).await?;
-        }
-        "высокая" => {
-            bot.send_message(msg.chat.id, "Сегодня позитивненький день, получается :)").await?;
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Теперь расскажи о своих чувствах за сегодня").await?;
-            dialogue.update(State::ReceiveEmotions { energy: String::from("Высокая энергия") }).await?;
-        }
-        _ => {
-            bot.send_message(msg.chat.id, "Напиши одну из трех категорий: 'Низкая', 'Средняя' или 'Высокая'").await?;
-            dialogue.update(State::ReceiveEnergy).await?;
-        }
-    }
-
-    Ok(())
-}
-
 pub async fn receive_emotions_handler(bot: Bot, dialogue: MyDialogue, energy: String, msg: Message) -> HandlerResult {
 
     tokio::time::sleep(Duration::from_millis(200)).await;
@@ -331,5 +300,10 @@ pub async fn waiting_handler(bot: Bot, msg: Message, dialogue: MyDialogue) -> Ha
         }
     }
 
+    Ok(())
+}
+
+pub async fn energy_error_handler(bot: Bot, msg: Message) -> HandlerResult {
+    bot.send_message(msg.chat.id, "Сначала выберите энергию").await?;
     Ok(())
 }

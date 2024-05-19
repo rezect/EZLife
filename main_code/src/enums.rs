@@ -23,7 +23,7 @@ pub enum State {
     ReceiveToNotion,
     GetNotionCode,
     GetDBID,
-    ReceiveEnergy,
+    EnergyError,
     ReceiveEmotions {
         energy: String,
     },

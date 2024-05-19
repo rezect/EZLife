@@ -3,6 +3,7 @@ mod enums;
 mod comands_handlers;
 mod handler_functions;
 mod notion_apis;
+mod callback_handlers;
 mod shemas {
     pub mod notion_shemas;
     pub mod ya_gpt_shemas;
@@ -21,20 +22,18 @@ use std::{
     time::Duration,
 };
 use teloxide::{
+    prelude::*,
     dispatching::{
         dialogue::{
             self,
             serializer::Json,
             ErasedStorage, SqliteStorage, Storage,
-        },
-        UpdateHandler,
+        }, UpdateFilterExt, UpdateHandler
     },
-    types::{
-        InputFile,
-        ParseMode
-    },
-    prelude::*,
     payloads::SendMessageSetters,
+    types::{
+        InlineKeyboardButton, InlineKeyboardMarkup, InputFile, ParseMode
+    },
     utils::command::BotCommands,
 };
 use reqwest::{
@@ -56,6 +55,7 @@ use serde_json::json;
 use comands_handlers::*;
 use handler_functions::*;
 use add_functions::*;
+use callback_handlers::*;
 use enums::*;
 use dotenvy::dotenv;
 use notion_apis::*;
@@ -106,15 +106,19 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![State::ReceiveToNotion].endpoint(receive_to_notion_handler))
         .branch(case![State::GetNotionCode].endpoint(get_notion_code_handler))
         .branch(case![State::GetDBID].endpoint(get_db_id_handler))
-        .branch(case![State::ReceiveEnergy].endpoint(receive_energy_handler))
         .branch(case![State::ReceiveEmotions { energy }].endpoint(receive_emotions_handler))
         .branch(case![State::ReceiveReflection { energy, emotions }].endpoint(receive_reflection_handler))
         .branch(case![State::ReceiveRate { energy, emotions, reflection }].endpoint(receive_rate_handler))
         .branch(case![State::IsAllOk { energy, emotions, reflection, rate }].endpoint(is_all_ok_handler))
         .branch(case![State::Waiting].endpoint(waiting_handler))
+        .branch(case![State::EnergyError].endpoint(energy_error_handler))
         .branch(case![State::NoteHelper].endpoint(note_helper));
+
+    let callback_handler = Update::filter_callback_query()
+        .branch(case![State::EnergyError].endpoint(callback_handler));
 
     dialogue::enter::<Update, ErasedStorage<State>, State, _>()
         .branch(message_handler)
+        .branch(callback_handler)
 
 }
