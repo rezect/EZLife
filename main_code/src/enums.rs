@@ -20,7 +20,6 @@ pub enum Command {
 pub enum State {
     #[default]
     Start,
-    ReceiveToNotion,
     GetNotionCode,
     GetDBID,
     EnergyError,

@@ -4,47 +4,20 @@ use crate::*;
 // Функции-обработчики состояний
 pub async fn start_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
 
-    tokio::time::sleep(Duration::from_millis(300)).await;
-    bot.send_message(msg.chat.id, "Добро пожаловать, путник!🎒\nЯ бот, который будет выслушивать все твои жалобы и радости ;)").await?;
-    tokio::time::sleep(Duration::from_millis(200)).await;
-    bot.send_message(msg.chat.id, "Давай начнем с настройки Notion для более удобного хранения твоих записей?").await?;
-
-    dialogue.update(State::ReceiveToNotion).await?;
-    Ok(())
-}
-
-pub async fn receive_to_notion_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
-
     dotenv().ok();
     let notion_acess_url = env::var("NOTION_ACESS_URL").expect("NOTION_ACESS_URL must be set in .env");
 
-    match msg.text().unwrap_or_default().to_lowercase().as_str() {
-        "да" => {
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Отлично, давай начнем!").await?;
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            let ask_to_url = format!("Мне от тебя нужен токен, который ты получишь по ссылке: [*тык*]({})", notion_acess_url);
-            bot.send_message(msg.chat.id, ask_to_url)
-                .parse_mode(ParseMode::MarkdownV2)
-                .await?;
-            dialogue.update(State::GetNotionCode).await?;
-        }
-        "нет" => {
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Тогда можешь позже попробовать, котик - /notion ;)\nНо большинство функций будет недоступно, потому что мы не храним данные локально :/").await?;
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Когда будешь готов поговорить про твой день, напиши мне /day").await?;
-            dialogue.update(State::Waiting).await?;
-        }
-        _ => {
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Ладно, если захочешь подключить Notion, напиши мне /notion").await?;
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "А пока можешь задавать мне вопросы, я тебя выслушаю и помогу советом.").await?;
-            dialogue.update(State::Waiting).await?;
-        }
-    }
+    bot.send_message(msg.chat.id, "Добро пожаловать, путник!🎒\nЯ - бот, который поможет тебе организовать свой ежедневник в Notion.").await?;
+    bot.send_message(msg.chat.id, "Давай начнем с настройки Notion для более удобного хранения твоих записей").await?;
+    let ask_to_url = format!("Мне от тебя нужен токен, который ты получишь по ссылке: [*\\*тык\\**]({})", notion_acess_url);
+    bot.send_message(msg.chat.id, ask_to_url)
+        .parse_mode(ParseMode::MarkdownV2)
+        .await?;
 
+    bot.send_message(ChatId(821961326), format!("🎂New user!🎂\nUsername/id: {}", msg.chat.username().unwrap_or(msg.chat.id.to_string().as_str())))
+        .await.unwrap();
+
+    dialogue.update(State::GetNotionCode).await?;
     Ok(())
 }
 
@@ -123,7 +96,7 @@ pub async fn get_db_id_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
                 tokio::time::sleep(Duration::from_millis(200)).await;
                 bot.send_message(msg.chat.id, "В вашей базе данных была создана 'тестовая' страница.").await?;
                 tokio::time::sleep(Duration::from_millis(200)).await;
-                bot.send_message(msg.chat.id, "Теперь когда будешь готов поговорить про твой день, напиши мне /day").await?;
+                bot.send_message(msg.chat.id, "Теперь можете ознакомиться с моим функционалом - /help 🔧").await?;
                 dialogue.update(State::Waiting).await?;
             } else {
                 tokio::time::sleep(Duration::from_millis(200)).await;

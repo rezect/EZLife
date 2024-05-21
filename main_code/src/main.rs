@@ -99,7 +99,6 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
     let message_handler = Update::filter_message()
         .branch(command_handler)
         .branch(case![State::Start].endpoint(start_handler))
-        .branch(case![State::ReceiveToNotion].endpoint(receive_to_notion_handler))
         .branch(case![State::GetNotionCode].endpoint(get_notion_code_handler))
         .branch(case![State::GetDBID].endpoint(get_db_id_handler))
         .branch(case![State::ReceiveEmotions { energy }].endpoint(receive_emotions_handler))
