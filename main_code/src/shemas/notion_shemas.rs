@@ -190,7 +190,7 @@ pub async fn get_notion_token_from_code(
 
 pub async fn notion_db_test(
     chat_id: String,
-    database_id: &str
+    database_id: String
 ) -> bool {
     let mut data_file = File::open(format!("user_tokens/{}", chat_id)).expect("File not found 2");
     let mut notion_token = String::new();
@@ -311,7 +311,7 @@ pub async fn notion_db_test(
 
 pub async fn notion_edit_db(
     chat_id: String,
-    db_id: &str
+    db_id: String
 ) -> HandlerResult {
     let mut data_file = File::open(format!("user_tokens/{}", chat_id)).expect("File not found");
     let mut notion_token = String::new();

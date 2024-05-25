@@ -1632,6 +1632,7 @@ dependencies = [
  "serde_json",
  "teloxide",
  "tokio",
+ "url",
 ]
 
 [[package]]

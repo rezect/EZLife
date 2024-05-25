@@ -63,16 +63,26 @@ pub async fn get_db_id_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
     match msg.text() {
         Some(url) => {
 
-            let db_token: &str;
-            if url.chars().count() >= 54 {
-                db_token = &url[22..(22 + 32)];
-            } else {
-                db_token = "Invalid link";
+            let mut db_token = "error_url".to_string();
+            match Url::parse(url) {
+                Ok(parsed_url) => {
+                    if let Some(mut segments) = parsed_url.path_segments() {
+                        if let Some(segment) = segments.next() {
+                            db_token = segment.to_string();
+                            println!("Extracted part: {}", segment);
+                        } else {
+                            println!("No segments found in the path.");
+                        }
+                    } else {
+                        println!("No path segments available.");
+                    }
+                },
+                Err(e) => println!("Failed to parse URL: {}", e),
             }
 
-            notion_edit_db(msg.chat.id.to_string(), db_token).await?;
+            notion_edit_db(msg.chat.id.to_string(), db_token.clone()).await?;
             sleep(Duration::from_millis(50)).await;
-            let response_is_success = notion_db_test(msg.chat.id.to_string(), db_token).await;
+            let response_is_success = notion_db_test(msg.chat.id.to_string(), db_token.clone()).await;
 
             if response_is_success {
 

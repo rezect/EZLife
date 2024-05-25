@@ -46,6 +46,7 @@ use shemas::{
     notion_shemas::*,
     ya_gpt_shemas::*,
 };
+use url::Url;
 use tokio::time::sleep;
 use serde_json::json;
 use comands_handlers::*;
