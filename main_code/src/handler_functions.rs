@@ -14,7 +14,7 @@ pub async fn start_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> Hand
         .parse_mode(ParseMode::MarkdownV2)
         .await?;
 
-    bot.send_message(ChatId(821961326), format!("🎂New user!🎂\nUsername/id: {}", msg.chat.username().unwrap_or(msg.chat.id.to_string().as_str())))
+    bot.send_message(ChatId(821961326), format!("🎂New user!🎂\nUsername: {}", msg.chat.username().unwrap_or(msg.chat.id.to_string().as_str())))
         .await.unwrap();
 
     dialogue.update(State::GetNotionCode).await?;
@@ -100,14 +100,15 @@ pub async fn get_db_id_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
                 dialogue.update(State::Waiting).await?;
             } else {
                 tokio::time::sleep(Duration::from_millis(200)).await;
-                bot.send_message(msg.chat.id, "Неправильная ссылка на базу данных, попробуй еще раз. :(").await?;
+                log::warn!("URL error: user - {}; url - {}", msg.chat.username().unwrap_or("Noname"), msg.text().unwrap_or("NoText"));
+                bot.send_message(msg.chat.id, "Неправильная ссылка на базу данных 🛠️").await?;
                 tokio::time::sleep(Duration::from_millis(200)).await;
                 let mut photo = PathBuf::new();
                 photo.push("images/guide_db_link.png");
                 bot.send_photo(msg.chat.id, InputFile::file(photo)).await?;
                 bot.send_message(msg.chat.id, "Перейдите на страницу своей базы данных и нажмите на три точки справа сверху.\nДалее скопируйте ссылку (Copy link) и отправьте ее мне.").await?;
                 tokio::time::sleep(Duration::from_millis(200)).await;
-                bot.send_message(msg.chat.id, "Если не получается - напишите моему хозяину: @rezect 🧑‍💻").await?;
+                bot.send_message(msg.chat.id, "Если не получается - попробуйте еще раз и убедитесь что предоставляете мне доступ к нужной странице: /notion 🧑‍💻").await?;
                 dialogue.update(State::GetDBID).await?;
             }
         }
@@ -195,39 +196,48 @@ pub async fn is_all_ok_handler(
 
     match msg.text().unwrap_or("None").to_lowercase().as_str() {
         "да" => {
-            let date_time_string = Local::now().format("%d.%m.%Y %H:%M").to_string();
             sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, "Хорошо, записал!\nДо встречи завтра ;)").await?;
 
-            match add_new_to_notion((energy.clone(), emotions.clone(), reflection.clone(), rate.clone(), date_time_string.clone(), msg.chat.id.to_string(), bot.clone())).await {
-                Ok(_) => {
-                    log::info!("Added to notion succsessfully");
-                }
-                Err(_) => {
-                    log::warn!("Added to notion caused errors!");
-                }
-            };
+            let response = notion_shema_new_page((energy.clone(), emotions.clone(), reflection.clone(), rate), msg.chat.id.to_string().clone()).await;
+
+            if response.status().is_success() {
+                log::info!("Added to notion succsessfully");
+                bot.send_message(msg.chat.id, "Хорошо, записал!\nДо встречи завтра ;)").await?;
+            } else {
+                log::warn!("Added to notion caused errors!");
+                bot.send_message(msg.chat.id, "Ошибка при записи в Notion\nУбедитесь, что вы не удаляли свойства (properties) базы данных.\nОна должна выглядеть так:").await?;
+                let mut photo = PathBuf::new();
+                photo.push("images/properties_error.jpg");
+                bot.send_photo(msg.chat.id, InputFile::file(photo)).await?;
+                bot.send_message(msg.chat.id, "Также попробуйте заново привязать Notion - /notion.").await?;
+            }
 
             sleep(Duration::from_millis(300)).await;
             bot.send_message(msg.chat.id, "Соединяю с инопланетянами 👽 для анализа вашего дня...").await?;
 
             let mut smart_total = smart_total_result((energy.clone(), emotions.clone(), reflection.clone())).await;
             if smart_total == "ul" {
-                bot.send_message(msg.chat.id, "Сейчас я немного занят🤯, попытаюсь еще раз через 5 сек").await?;
-                sleep(Duration::from_secs(5)).await;
+                bot.send_message(msg.chat.id, "Сейчас я немного занят🤯, попытаюсь передать ваш запрос еще раз через 10 сек").await?;
+                sleep(Duration::from_secs(10)).await;
                 smart_total = smart_total_result((energy.clone(), emotions.clone(), reflection.clone())).await;
             }
-            while smart_total == "ul" {
+            let attemps = 1;
+            while smart_total == "ul" && attemps <= 3 {
                 bot.send_message(msg.chat.id, "Иииии еще раз😓...").await?;
                 sleep(Duration::from_secs(5)).await;
                 smart_total = smart_total_result((energy.clone(), emotions.clone(), reflection.clone())).await;
             }
 
-            sleep(Duration::from_millis(200)).await;
-            bot.send_message(msg.chat.id, smart_total)
-                .parse_mode(ParseMode::MarkdownV2)
-                .await?;
-            dialogue.update(State::Waiting).await?;
+            if attemps == 3 {
+                bot.send_message(msg.chat.id, "Приношу свои извинения, что-то пошло не так. 🤖💔 Отправил запрос старшему механику 🔧👨‍🔧").await?;
+                bot.send_message(ChatId(821961326), format!("!ОШИБКА! Не работает YaGPT у {} - {}", msg.chat.username().unwrap_or("Noname"), msg.chat.id)).await?;
+            } else {
+                sleep(Duration::from_millis(200)).await;
+                bot.send_message(msg.chat.id, smart_total)
+                    .parse_mode(ParseMode::MarkdownV2)
+                    .await?;
+                dialogue.update(State::Waiting).await?;
+            }
         }
         "нет" => {
             // В разработке

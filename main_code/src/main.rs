@@ -2,7 +2,6 @@ mod add_functions;
 mod enums;
 mod comands_handlers;
 mod handler_functions;
-mod notion_apis;
 mod callback_handlers;
 mod shemas {
     pub mod notion_shemas;
@@ -41,6 +40,7 @@ use chrono::{
     Datelike,
     Local,
     Utc,
+    Timelike,
 };
 use shemas::{
     notion_shemas::*,
@@ -54,7 +54,6 @@ use add_functions::*;
 use callback_handlers::*;
 use enums::*;
 use dotenvy::dotenv;
-use notion_apis::*;
 
 
 type MyDialogue = Dialogue<State, ErasedStorage<State>>;

@@ -1,11 +1,33 @@
+use serde_json::Value;
+
 use crate::*;
 
 
 pub async fn notion_shema_new_page(
-    (energy, emotions, reflection, rate, cur_date): (String, String, String, u32, String),
-    (day, month_name, chat_id): (u32, &str, String)
-
+    (energy, emotions, reflection, rate): (String, String, String, u32),
+    chat_id: String,
 ) -> Response {
+
+    // Получаем дату в формате "4 апр."
+    let local_date: chrono::prelude::DateTime<Local>;
+    if Local::now().hour() > 6 {
+        local_date = Local::now();
+    } else {
+        local_date = Local::now() - chrono::Duration::days(1);
+    }
+    let month_names_for_tags = [
+        "январь", "февраль", "март", "апрель", "май", "июнь",
+        "июль", "август", "сентябрь", "октяюрь", "ноябрь", "декабрь"
+    ];
+    let cur_month_for_tags = month_names_for_tags[local_date.month0() as usize];
+    let month_names = [
+        "янв.", "фев.", "марта", "апр.", "мая", "июня",
+        "июля", "авг.", "сент.", "окт.", "ноября", "дек."
+    ];
+    let month_name = month_names[local_date.month0() as usize];
+    let day = local_date.day();
+    let cur_date = local_date.format("%Y-%m-%d").to_string();
+
     let mut data_file = File::open(format!("user_db_ids/{}", chat_id)).expect("File not found");
     let mut database_id = String::new();
     data_file.read_to_string(&mut database_id).expect("File reading failed");
@@ -15,13 +37,6 @@ pub async fn notion_shema_new_page(
     let mut notion_token = String::new();
     data_file.read_to_string(&mut notion_token).expect("File reading failed");
     notion_token.pop();
-
-    let month_names_for_tags = [
-        "январь", "февраль", "март", "апрель", "май", "июнь",
-        "июль", "август", "сентябрь", "октяюрь", "ноябрь", "декабрь"
-    ];
-    let cur_month_for_tags = month_names_for_tags[Utc::now().month0() as usize];
-    let cur_year = Utc::now().year();
 
     let url = "https://api.notion.com/v1/pages";
     let client = Client::new();
@@ -39,16 +54,13 @@ pub async fn notion_shema_new_page(
             "Tags": {
                 "multi_select": [
                     {
-                        "name": cur_month_for_tags,
-                        "color": "yellow"
+                        "name": cur_month_for_tags
                     },
                     {
-                        "name": "day",
-                        "color": "green"
+                        "name": "day"
                     },
                     {
-                        "name": cur_year.to_string(),
-                        "color": "blue"
+                        "name": local_date.year().to_string()
                     },
                 ]
             },
@@ -62,13 +74,9 @@ pub async fn notion_shema_new_page(
                 ]
             },
             "Date": {
-                "rich_text": [
-                    {
-                        "text": {
-                            "content": cur_date
-                        }
-                    }
-                ]
+                "date": {
+                    "start": cur_date
+                }
             },
             "Energy": {
                 "select": {
@@ -176,7 +184,6 @@ pub async fn get_notion_token_from_code(
     };
     let json_data: serde_json::Value = serde_json::from_str(&s)
         .expect("Can't parse json");
-    println!("{}", s);
 
     return json_data["access_token"].to_string();
 }
@@ -213,13 +220,9 @@ pub async fn notion_db_test(
                 ]
             },
             "Date": {
-                "rich_text": [
-                    {
-                        "text": {
-                            "content": "Test_DATE"
-                        }
-                    }
-                ]
+                "date": {
+                    "start": "1111-11-11"
+                }
             },
             "Energy": {
                 "select": {
@@ -322,19 +325,39 @@ pub async fn notion_edit_db(
     headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
     headers.insert("Notion-Version", header::HeaderValue::from_static("2022-06-28"));
 
+    let response = client.get(url.to_string())
+        .headers(headers.clone())
+        .send()
+        .await;
+
+    let s = match response {
+        Ok(response) => response.text().await.unwrap(),
+        Err(_) => panic!("Error!"),
+    };
+    let json_data: serde_json::Value = serde_json::from_str(&s)
+        .expect("Can't parse json");
+
+    let tags_json_str = json_data["properties"]["Tags"].to_string();
+    let tags_json: Value;
+    if tags_json_str == "null" {
+        tags_json = json!({
+            "id": "flsb",
+            "name": "Tags",
+            "type": "multi_select",
+            "multi_select": {}
+        });
+    } else {
+        tags_json = serde_json::from_str(&tags_json_str).unwrap();
+    }
+
     let request_body = json!({
         "properties": {
-            "Tags": {
-                "id": "flsb",
-                "name": "Tags",
-                "type": "multi_select",
-                "multi_select": {}
-            },
+            "Tags": tags_json,
             "Date": {
-                "id": "NZZ%3B",
+                "id": "AJP%7D",
                 "name": "Date",
-                "type": "rich_text",
-                "rich_text": {}
+                "type": "date",
+                "date": {}
             },
             "Energy": {
                 "id": "%40Q%5BM",
@@ -344,18 +367,15 @@ pub async fn notion_edit_db(
                   "options": [
                     {
                       "id": "e28f74fc-83a7-4469-8435-27eb18f9f9de",
-                      "name": "Низкая энергия",
-                      "color": "red"
+                      "name": "Низкая энергия"
                     },
                     {
                       "id": "6132d771-b283-4cd9-ba44-b1ed30477c7f",
-                      "name": "Средняя энергия",
-                      "color": "yellow"
+                      "name": "Средняя энергия"
                     },
                     {
                       "id": "fc9ea861-820b-4f2b-bc32-44ed9eca873c",
-                      "name": "Высокая энергия",
-                      "color": "green"
+                      "name": "Высокая энергия"
                     }
                   ]
                 }
@@ -371,12 +391,14 @@ pub async fn notion_edit_db(
         }
     });
 
-    client
+    let response1 = client
     .patch(url.to_string())
     .headers(headers)
     .body(request_body.to_string())
     .send()
     .await.expect("Failed to send request");
+
+    println!("{}", response1.text().await.unwrap());
 
     Ok(())
 }
@@ -417,8 +439,9 @@ pub async fn notion_reflection_shema(
     data_file.read_to_string(&mut notion_token).expect("File reading failed");
     notion_token.pop();
 
-    let cur_year = Utc::now().year();
-    let cur_time = Local::now().format("%H:%M").to_string();
+    let local_time = Local::now();
+    let cur_year = local_time.year();
+    let cur_time = local_time.format("%H:%M").to_string();
     let month_names = [
         "января", "февраля", "марта", "апреля", "мая", "июня",
         "июля", "августа", "сентября", "октяюря", "ноября", "декабря"
@@ -446,16 +469,13 @@ pub async fn notion_reflection_shema(
             "Tags": {
                 "multi_select": [
                     {
-                        "name": cur_month_for_tags,
-                        "color": "yellow"
+                        "name": cur_month_for_tags
                     },
                     {
-                        "name": "note",
-                        "color": "gray"
+                        "name": "note"
                     },
                     {
-                        "name": cur_year.to_string(),
-                        "color": "blue"
+                        "name": cur_year.to_string()
                     },
                 ]
             },
@@ -463,19 +483,15 @@ pub async fn notion_reflection_shema(
                 "title": [
                     {
                         "text": {
-                            "content": Local::now().day().to_string() + " " + cur_month
+                            "content": local_time.day().to_string() + " " + cur_month
                         }
                     }
                 ]
             },
             "Date": {
-                "rich_text": [
-                    {
-                        "text": {
-                            "content": Local::now().format("%d.%m.%Y %H:%M").to_string()
-                        }
-                    }
-                ]
+                "date": {
+                    "start": local_time.format("%Y-%m-%dT%H:%MZ").to_string()
+                }
             },
         },
         "children": [
@@ -511,9 +527,9 @@ pub async fn notion_reflection_shema(
     });
 
     return client
-    .post(url.to_string())
-    .headers(headers.clone())
-    .body(request_body.to_string())
-    .send()
-    .await.expect("Failed to send request");
+        .post(url.to_string())
+        .headers(headers.clone())
+        .body(request_body.to_string())
+        .send()
+        .await.expect("Failed to send request");
 }
