@@ -4,6 +4,7 @@ mod comands_handlers;
 mod handler_functions;
 mod callback_handlers;
 mod shemas {
+    pub mod notion_checkers_shemas;
     pub mod notion_shemas;
     pub mod ya_gpt_shemas;
 }
@@ -45,6 +46,7 @@ use chrono::{
 use shemas::{
     notion_shemas::*,
     ya_gpt_shemas::*,
+    notion_checkers_shemas::*,
 };
 use url::Url;
 use tokio::time::sleep;
@@ -74,6 +76,9 @@ async fn main() {
         .parse_mode(ParseMode::MarkdownV2)
         .await.unwrap();
 
+    bot.send_message(my_id, "Возникли проблемы с вашей страничкой Notion ❌\nУбедитесь, что:\n*1\\. Вы даете доступ к нужной странице при авторизации*\n*2\\. Следуйте следующему руководству\\.*")
+        .parse_mode(ParseMode::MarkdownV2)
+        .await.unwrap();
     check_or_create_file("db.sqlite").await;
 
     let storage: MyStorage = SqliteStorage::open("db.sqlite", Json).await.unwrap().erase();
@@ -94,6 +99,7 @@ fn shema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> 
         .branch(case![Command::Day].endpoint(new_day_command))
         .branch(case![Command::Sleep].endpoint(sleep_command))
         .branch(case![Command::Notion].endpoint(notion_command))
+        .branch(case![Command::Checker].endpoint(checker_command))
         .branch(case![Command::Note].endpoint(note_command));
 
     let message_handler = Update::filter_message()

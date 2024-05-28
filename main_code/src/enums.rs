@@ -14,6 +14,8 @@ pub enum Command {
     Notion,
     #[command(description = "Bot go to sleep")]
     Sleep,
+    #[command(description = "Check your if your notion is valid")]
+    Checker,
 }
 
 #[derive(Clone, Default, serde::Serialize, serde::Deserialize)]

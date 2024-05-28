@@ -63,28 +63,38 @@ pub async fn get_db_id_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
     match msg.text() {
         Some(url) => {
 
-            let mut db_token = "error_url".to_string();
+            let mut db_token1 = "error_url".to_string();
+            let mut db_token2 = "error_url".to_string();
             match Url::parse(url) {
                 Ok(parsed_url) => {
                     if let Some(mut segments) = parsed_url.path_segments() {
                         if let Some(segment) = segments.next() {
-                            db_token = segment.to_string();
-                            println!("Extracted part: {}", segment);
+                            db_token1 = segment.to_string();
+                            log::warn!("Extracted part: {}", segment);
+                            if let Some(segment) = segments.next() {
+                                db_token2 = segment.to_string();
+                                log::warn!("Extracted part: {}", segment);
+                            } else {
+                                log::warn!("No segments found in the path.");
+                            }
                         } else {
-                            println!("No segments found in the path.");
+                            log::warn!("No segments found in the path.");
                         }
                     } else {
-                        println!("No path segments available.");
+                        log::warn!("No path segments available.");
                     }
                 },
-                Err(e) => println!("Failed to parse URL: {}", e),
+                Err(e) => log::warn!("Failed to parse URL: {}", e),
             }
 
-            notion_edit_db(msg.chat.id.to_string(), db_token.clone()).await?;
-            sleep(Duration::from_millis(50)).await;
-            let response_is_success = notion_db_test(msg.chat.id.to_string(), db_token.clone()).await;
+            log::info!("db_token1: {}, db_token2: {}", db_token1, db_token2);
 
-            if response_is_success {
+            notion_edit_db(msg.chat.id.to_string(), db_token1.clone()).await?;
+            sleep(Duration::from_millis(50)).await;
+            let response1_is_success = notion_db_test(msg.chat.id.to_string(), db_token1.clone()).await;
+            let response2_is_success = notion_db_test(msg.chat.id.to_string(), db_token2.clone()).await;
+
+            if response1_is_success {
 
                 if !Path::new("user_db_ids").exists() {
                     match std::fs::create_dir("user_db_ids") {
@@ -98,7 +108,31 @@ pub async fn get_db_id_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
                     .append(false)
                     .create(true)
                     .open(format!("user_db_ids/{}", msg.chat.id))?;
-                writeln!(file, "{}", db_token)?;
+                writeln!(file, "{}", db_token1)?;
+                log::info!("Success to save notion token to file");
+                
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                bot.send_message(msg.chat.id, "Просто отлично!\nНастройка Notion завершена!").await?;
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                bot.send_message(msg.chat.id, "В вашей базе данных была создана 'тестовая' страница.").await?;
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                bot.send_message(msg.chat.id, "Теперь можете ознакомиться с моим функционалом - /help 🔧").await?;
+                dialogue.update(State::Waiting).await?;
+            } else if response2_is_success {
+
+                if !Path::new("user_db_ids").exists() {
+                    match std::fs::create_dir("user_db_ids") {
+                        Ok(_) => println!("Директория 'user_db_ids' успешно создана."),
+                        Err(e) => eprintln!("Ошибка при создании директории user_db_ids: {}", e),
+                    }
+                }
+
+                let mut file = OpenOptions::new()
+                    .write(true)
+                    .append(false)
+                    .create(true)
+                    .open(format!("user_db_ids/{}", msg.chat.id))?;
+                writeln!(file, "{}", db_token2)?;
                 log::info!("Success to save notion token to file");
                 
                 tokio::time::sleep(Duration::from_millis(200)).await;

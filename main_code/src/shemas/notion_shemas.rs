@@ -26,7 +26,7 @@ pub async fn notion_shema_new_page(
     ];
     let month_name = month_names[local_date.month0() as usize];
     let day = local_date.day();
-    let cur_date = local_date.format("%Y-%m-%d").to_string();
+    let cur_date = Utc::now().format("%Y-%m-%d").to_string();
 
     let mut data_file = File::open(format!("user_db_ids/{}", chat_id)).expect("File not found");
     let mut database_id = String::new();
@@ -325,7 +325,8 @@ pub async fn notion_edit_db(
     headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
     headers.insert("Notion-Version", header::HeaderValue::from_static("2022-06-28"));
 
-    let response = client.get(url.to_string())
+    let response = client
+        .get(url.to_string())
         .headers(headers.clone())
         .send()
         .await;
@@ -403,27 +404,6 @@ pub async fn notion_edit_db(
     Ok(())
 }
 
-pub async fn notion_is_token_valid(
-    token_to_check: String
-) -> bool {
-    
-    let url = format!("https://api.notion.com/v1/users/me");
-    let client = Client::new();
-    let mut headers = header::HeaderMap::new();
-    headers.insert("Authorization", header::HeaderValue::from_str(&format!("Bearer {}", token_to_check)).expect("Invalid Notion token"));
-    headers.insert("Content-Type", header::HeaderValue::from_static("application/json"));
-    headers.insert("Notion-Version", header::HeaderValue::from_static("2022-06-28"));
-
-    let response = client
-        .get(url.to_string())
-        .headers(headers)
-        .send()
-        .await
-        .expect("Failed to send request");
-
-    return response.status().is_success();
-}
-
 pub async fn notion_reflection_shema(
     note_info: &str,
     chat_id: String,
@@ -450,8 +430,8 @@ pub async fn notion_reflection_shema(
         "январь", "февраль", "март", "апрель", "май", "июнь",
         "июль", "август", "сентябрь", "октяюрь", "ноябрь", "декабрь"
     ];
-    let cur_month = month_names[Utc::now().month0() as usize];
-    let cur_month_for_tags = month_names_for_tags[Utc::now().month0() as usize];
+    let cur_month = month_names[Local::now().month0() as usize];
+    let cur_month_for_tags = month_names_for_tags[Local::now().month0() as usize];
 
     let url = "https://api.notion.com/v1/pages";
     let client = Client::new();
@@ -490,7 +470,7 @@ pub async fn notion_reflection_shema(
             },
             "Date": {
                 "date": {
-                    "start": local_time.format("%Y-%m-%dT%H:%MZ").to_string()
+                    "start": Utc::now().format("%Y-%m-%dT%H:%MZ").to_string()
                 }
             },
         },
