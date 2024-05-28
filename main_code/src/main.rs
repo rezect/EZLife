@@ -72,13 +72,8 @@ async fn main() {
 
     let bot = Bot::from_env();
     let my_id = ChatId(821961326);
-    bot.send_message(my_id, "I ||started||\\.\\.\\.")
-        .parse_mode(ParseMode::MarkdownV2)
-        .await.unwrap();
+    bot.send_message(my_id, "I`ve been updated!!!").await.unwrap();
 
-    bot.send_message(my_id, "Возникли проблемы с вашей страничкой Notion ❌\nУбедитесь, что:\n*1\\. Вы даете доступ к нужной странице при авторизации*\n*2\\. Следуйте следующему руководству\\.*")
-        .parse_mode(ParseMode::MarkdownV2)
-        .await.unwrap();
     check_or_create_file("db.sqlite").await;
 
     let storage: MyStorage = SqliteStorage::open("db.sqlite", Json).await.unwrap().erase();
