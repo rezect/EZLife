@@ -145,8 +145,10 @@ pub async fn get_db_id_handler(bot: Bot, dialogue: MyDialogue, msg: Message) -> 
             } else {
                 tokio::time::sleep(Duration::from_millis(200)).await;
                 log::warn!("URL error: user - {}; url - {}", msg.chat.username().unwrap_or("Noname"), msg.text().unwrap_or("NoText"));
-                bot.send_message(msg.chat.id, "Неправильная ссылка на базу данных 🛠️").await?;
                 tokio::time::sleep(Duration::from_millis(200)).await;
+                bot.send_message(msg.chat.id, "Неправильная ссылка ❌\nУбедитесь, что:\n*1\\. Вы даете доступ к нужной странице при авторизации (на первом этапе)*\n*2\\. Следуйте следующему руководству\\.*")
+                    .parse_mode(ParseMode::MarkdownV2)
+                    .await?;
                 let mut photo = PathBuf::new();
                 photo.push("images/guide_db_link.png");
                 bot.send_photo(msg.chat.id, InputFile::file(photo)).await?;
